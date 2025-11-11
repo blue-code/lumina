@@ -5,8 +5,8 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                               QSplitter, QPushButton, QComboBox, QLabel,
                               QFileDialog, QMessageBox, QToolBar, QAction,
                               QStatusBar)
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
-from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import Qt, QThread, pyqtSignal, QUrl
+from PyQt5.QtGui import QIcon, QDesktopServices
 from ui.request_tree_widget import RequestTreeWidget
 from ui.request_editor_panel import RequestEditorPanel
 from ui.response_panel import ResponsePanel
@@ -51,6 +51,10 @@ class MainWindow(QMainWindow):
 
         # 요청 스레드
         self.request_thread: RequestThread = None
+
+        # 웹 서버
+        self.web_server = None
+        self.web_server_port = 5000
 
         self.setup_ui()
         self.setup_menu()
@@ -147,6 +151,14 @@ class MainWindow(QMainWindow):
         env_action = QAction("Manage Environments", self)
         env_action.triggered.connect(self.show_environment_dialog)
         view_menu.addAction(env_action)
+
+        view_menu.addSeparator()
+
+        # 웹 인터페이스
+        web_action = QAction("Open Web Interface", self)
+        web_action.setShortcut("Ctrl+W")
+        web_action.triggered.connect(self.open_web_interface)
+        view_menu.addAction(web_action)
 
         # Help 메뉴
         help_menu = menubar.addMenu("Help")
@@ -405,11 +417,49 @@ class MainWindow(QMainWindow):
             "Built with ❤️ using Python & PyQt5"
         )
 
+    def open_web_interface(self):
+        """웹 인터페이스 열기"""
+        # 웹 서버가 실행중이지 않으면 시작
+        if not self.web_server or not self.web_server.is_running:
+            self.start_web_server()
+
+        # 브라우저에서 열기
+        url = f"http://127.0.0.1:{self.web_server_port}"
+        QDesktopServices.openUrl(QUrl(url))
+        self.statusBar.showMessage(f"Opening web interface at {url}")
+
+    def start_web_server(self):
+        """웹 서버 시작"""
+        try:
+            from web.web_server import LuminaWebServer
+
+            # 웹 서버 인스턴스 생성
+            self.web_server = LuminaWebServer(host='127.0.0.1', port=self.web_server_port)
+            # 같은 프로젝트 매니저 공유
+            self.web_server.project_manager = self.project_manager
+            self.web_server.http_client = self.http_client
+
+            # 서버 시작
+            self.web_server.start()
+            self.statusBar.showMessage(f"✨ Web server started at http://127.0.0.1:{self.web_server_port}")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to start web server:\n{str(e)}")
+
+    def stop_web_server(self):
+        """웹 서버 중지"""
+        if self.web_server and self.web_server.is_running:
+            self.web_server.stop()
+            self.statusBar.showMessage("Web server stopped")
+
     def closeEvent(self, event):
         """윈도우 닫기 이벤트"""
         # 현재 편집 내용 저장
         if self.current_request:
             self.request_editor.save_to_request()
+
+        # 웹 서버 종료
+        self.stop_web_server()
 
         # HTTP 클라이언트 종료
         self.http_client.close()

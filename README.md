@@ -12,6 +12,7 @@ Python 기반의 세련되고 강력한 REST API 테스트 도구
 
 ## 🌟 주요 기능
 
+- **데스크톱 & 웹 인터페이스**: PyQt5 GUI와 웹 브라우저 양쪽에서 사용 가능
 - **다양한 HTTP 메서드 지원**: GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS
 - **직관적인 요청 구성**: Headers, URL Parameters, Query Parameters, Body (Raw/Form)
 - **다중 인증 방식**: Basic Auth, Bearer Token, API Key
@@ -42,6 +43,8 @@ pip install PyQt5 requests pygments
 
 ### 실행
 
+**데스크톱 앱 (PyQt5 GUI):**
+
 ```bash
 python main.py
 ```
@@ -51,6 +54,16 @@ python main.py
 ```bash
 ./run.sh
 ```
+
+**웹 인터페이스 (브라우저):**
+
+```bash
+python web_server_standalone.py
+```
+
+그리고 브라우저에서 `http://localhost:5000` 접속
+
+또는 데스크톱 앱에서 `View` → `Open Web Interface` (`Ctrl+W`)
 
 ## 📖 사용 방법
 
@@ -86,24 +99,32 @@ Request URL:
 
 ```
 lumina/
-├── main.py                 # 메인 실행 파일
-├── requirements.txt        # 의존성 목록
-├── models/                 # 데이터 모델
-│   ├── request_model.py    # 요청/폴더 모델
-│   ├── environment.py      # 환경 변수 모델
-│   └── response_model.py   # 응답 모델
-├── core/                   # 핵심 로직
-│   ├── http_client.py      # HTTP 클라이언트
-│   ├── auth_manager.py     # 인증 관리자
-│   └── project_manager.py  # 프로젝트 관리자
-├── ui/                     # UI 컴포넌트
-│   ├── main_window.py      # 메인 윈도우
-│   ├── request_tree_widget.py    # 요청 트리
-│   ├── request_editor_panel.py   # 요청 편집 패널
-│   ├── response_panel.py         # 응답 표시 패널
-│   └── environment_dialog.py     # 환경 관리 다이얼로그
-└── utils/                  # 유틸리티
-    └── variable_resolver.py      # 변수 치환 도구
+├── main.py                      # 데스크톱 앱 메인
+├── web_server_standalone.py    # 웹 서버 단독 실행
+├── requirements.txt             # 의존성 목록
+├── models/                      # 데이터 모델
+│   ├── request_model.py         # 요청/폴더 모델
+│   ├── environment.py           # 환경 변수 모델
+│   └── response_model.py        # 응답 모델
+├── core/                        # 핵심 로직
+│   ├── http_client.py           # HTTP 클라이언트
+│   ├── auth_manager.py          # 인증 관리자
+│   └── project_manager.py       # 프로젝트 관리자
+├── ui/                          # 데스크톱 UI
+│   ├── main_window.py           # 메인 윈도우
+│   ├── request_tree_widget.py   # 요청 트리
+│   ├── request_editor_panel.py  # 요청 편집 패널
+│   ├── response_panel.py        # 응답 표시 패널
+│   └── environment_dialog.py    # 환경 관리 다이얼로그
+├── web/                         # 웹 인터페이스
+│   ├── web_server.py            # Flask 웹 서버
+│   ├── templates/               # HTML 템플릿
+│   │   └── index.html
+│   └── static/                  # CSS, JavaScript
+│       ├── css/style.css
+│       └── js/app.js
+└── utils/                       # 유틸리티
+    └── variable_resolver.py     # 변수 치환 도구
 ```
 
 ## 💡 샘플 사용 예시
@@ -137,15 +158,21 @@ Auth Type: Bearer Token
 Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-## ⌨️ 단축키
+## ⌨️ 단축키 (데스크톱 앱)
 
 - `Ctrl+N`: 새 프로젝트
 - `Ctrl+O`: 프로젝트 열기
 - `Ctrl+S`: 프로젝트 저장
 - `Ctrl+Shift+S`: 다른 이름으로 저장
+- `Ctrl+W`: 웹 인터페이스 열기
 - `Ctrl+Q`: 종료
 
 ## ✨ 주요 기능
+
+### 듀얼 인터페이스
+- **데스크톱 앱**: PyQt5 기반 네이티브 애플리케이션
+- **웹 인터페이스**: Flask 기반 브라우저 접근
+- 동일한 프로젝트를 양쪽에서 사용 가능
 
 ### 요청 관리
 - 폴더 구조로 요청 그룹화

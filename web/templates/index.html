@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina ✨ - Web Interface</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>✨ Lumina</h1>
+        <p>Elegant REST API Client - Web Interface</p>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h3>Requests</h3>
+                <button class="btn-new" id="btn-new-request">+ New</button>
+            </div>
+            <ul class="request-list" id="request-list">
+                <!-- Requests will be loaded here -->
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Request Editor -->
+            <div class="request-editor">
+                <div class="request-header">
+                    <select class="select-method" id="select-method">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                        <option value="PATCH">PATCH</option>
+                        <option value="HEAD">HEAD</option>
+                        <option value="OPTIONS">OPTIONS</option>
+                    </select>
+                    <input type="text" class="input-url" id="input-url" placeholder="Enter request URL">
+                    <button class="btn-send" id="btn-send">Send</button>
+                </div>
+
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab active" data-tab="params">Params</button>
+                    <button class="tab" data-tab="headers">Headers</button>
+                    <button class="tab" data-tab="body">Body</button>
+                </div>
+
+                <!-- Tab Contents -->
+                <div class="tab-content active" id="tab-params">
+                    <table class="key-value-table">
+                        <thead>
+                            <tr>
+                                <th>Key</th>
+                                <th>Value</th>
+                                <th width="40"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="params-tbody">
+                            <!-- Params will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="tab-content" id="tab-headers">
+                    <table class="key-value-table">
+                        <thead>
+                            <tr>
+                                <th>Key</th>
+                                <th>Value</th>
+                                <th width="40"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="headers-tbody">
+                            <!-- Headers will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="tab-content" id="tab-body">
+                    <textarea id="body-raw" placeholder="Enter raw body (JSON, XML, text, etc.)"></textarea>
+                </div>
+            </div>
+
+            <!-- Response Panel -->
+            <div class="response-panel hidden" id="response-panel">
+                <div class="response-header">
+                    <div class="response-status" id="response-status">200 OK</div>
+                    <div class="response-meta" id="response-meta">Time: 123 ms | Size: 456 bytes</div>
+                </div>
+                <div class="response-body">
+                    <pre id="response-body"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
