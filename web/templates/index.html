@@ -19,11 +19,49 @@
         <div class="sidebar">
             <div class="sidebar-header">
                 <h3>Requests</h3>
-                <button class="btn-new" id="btn-new-request">+ New</button>
+                <div class="sidebar-actions">
+                    <button class="btn-new" id="btn-new-request">+ New</button>
+                    <button class="btn-import" id="btn-import-md" title="Import from Markdown">📥 Import</button>
+                    <button class="btn-export" id="btn-export-md" title="Export to Markdown">📤 Export</button>
+                </div>
             </div>
             <ul class="request-list" id="request-list">
                 <!-- Requests will be loaded here -->
             </ul>
+        </div>
+
+        <!-- Import Markdown Modal -->
+        <div class="modal" id="import-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Import from Markdown</h3>
+                    <button class="modal-close" id="btn-close-import">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <textarea id="import-markdown-textarea" placeholder="Paste your markdown content here..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-cancel" id="btn-cancel-import">Cancel</button>
+                    <button class="btn-primary" id="btn-confirm-import">Import</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Markdown Modal -->
+        <div class="modal" id="export-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Export to Markdown</h3>
+                    <button class="modal-close" id="btn-close-export">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <textarea id="export-markdown-textarea" readonly></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-primary" id="btn-copy-export">Copy to Clipboard</button>
+                    <button class="btn-cancel" id="btn-close-export2">Close</button>
+                </div>
+            </div>
         </div>
 
         <!-- Main Content -->

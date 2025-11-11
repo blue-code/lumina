@@ -20,6 +20,7 @@ Python 기반의 세련되고 강력한 REST API 테스트 도구
 - **아름다운 응답 표시**: Pretty JSON, Raw 뷰, Headers 확인
 - **프로젝트 관리**: JSON 파일로 요청 저장/불러오기/팀 공유
 - **폴더 구조**: 요청을 폴더로 그룹화하여 체계적 관리
+- **마크다운 Import/Export**: 마크다운 형식으로 API 정의를 가져오고 내보내기
 
 ## 🚀 빠른 시작
 
@@ -95,6 +96,44 @@ Request URL:
 - **불러오기**: `Ctrl+O` or File → Open Project
 - **공유**: JSON 파일을 팀원과 공유
 
+### 4. 마크다운으로 API 가져오기/내보내기
+
+**가져오기 (Import):**
+1. 데스크톱: `File` → `Import from Markdown...` (`Ctrl+I`)
+2. 웹: 좌측 사이드바에서 `📥 Import` 버튼 클릭
+3. 마크다운 파일 선택 또는 내용 붙여넣기
+4. 자동으로 요청이 생성됨
+
+**내보내기 (Export):**
+1. 데스크톱: `File` → `Export to Markdown...` (`Ctrl+E`)
+2. 웹: 좌측 사이드바에서 `📤 Export` 버튼 클릭
+3. 마크다운 형식으로 모든 요청이 변환됨
+4. 파일로 저장하거나 클립보드에 복사
+
+**마크다운 형식 예시:**
+
+```markdown
+# API Collection Name
+
+## Request Name
+- Method: GET
+- URL: https://api.example.com/users
+- Headers:
+  - Content-Type: application/json
+  - Authorization: Bearer {{TOKEN}}
+- Params:
+  - page: 1
+  - limit: 10
+- Body:
+\```json
+{
+  "key": "value"
+}
+\```
+```
+
+샘플 파일: `sample_api.md` 참고
+
 ## 🏗️ 프로젝트 구조
 
 ```
@@ -102,6 +141,7 @@ lumina/
 ├── main.py                      # 데스크톱 앱 메인
 ├── web_server_standalone.py    # 웹 서버 단독 실행
 ├── requirements.txt             # 의존성 목록
+├── sample_api.md                # 마크다운 샘플 파일
 ├── models/                      # 데이터 모델
 │   ├── request_model.py         # 요청/폴더 모델
 │   ├── environment.py           # 환경 변수 모델
@@ -124,7 +164,8 @@ lumina/
 │       ├── css/style.css
 │       └── js/app.js
 └── utils/                       # 유틸리티
-    └── variable_resolver.py     # 변수 치환 도구
+    ├── variable_resolver.py     # 변수 치환 도구
+    └── markdown_parser.py       # 마크다운 파서
 ```
 
 ## 💡 샘플 사용 예시
@@ -164,6 +205,8 @@ Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 - `Ctrl+O`: 프로젝트 열기
 - `Ctrl+S`: 프로젝트 저장
 - `Ctrl+Shift+S`: 다른 이름으로 저장
+- `Ctrl+I`: 마크다운 가져오기
+- `Ctrl+E`: 마크다운 내보내기
 - `Ctrl+W`: 웹 인터페이스 열기
 - `Ctrl+Q`: 종료
 

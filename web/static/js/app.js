@@ -21,6 +21,20 @@ class LuminaApp {
         // New Request 버튼
         document.getElementById('btn-new-request').addEventListener('click', () => this.createNewRequest());
 
+        // Import/Export 버튼
+        document.getElementById('btn-import-md').addEventListener('click', () => this.showImportModal());
+        document.getElementById('btn-export-md').addEventListener('click', () => this.showExportModal());
+
+        // Import Modal
+        document.getElementById('btn-close-import').addEventListener('click', () => this.hideImportModal());
+        document.getElementById('btn-cancel-import').addEventListener('click', () => this.hideImportModal());
+        document.getElementById('btn-confirm-import').addEventListener('click', () => this.importMarkdown());
+
+        // Export Modal
+        document.getElementById('btn-close-export').addEventListener('click', () => this.hideExportModal());
+        document.getElementById('btn-close-export2').addEventListener('click', () => this.hideExportModal());
+        document.getElementById('btn-copy-export').addEventListener('click', () => this.copyExportToClipboard());
+
         // Tabs
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', (e) => this.switchTab(e.target.dataset.tab));
@@ -271,6 +285,80 @@ class LuminaApp {
         // 선택된 탭 활성화
         document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
         document.getElementById(`tab-${tabName}`).classList.add('active');
+    }
+
+    // Import/Export 기능
+    showImportModal() {
+        document.getElementById('import-modal').classList.add('active');
+        document.getElementById('import-markdown-textarea').value = '';
+        document.getElementById('import-markdown-textarea').focus();
+    }
+
+    hideImportModal() {
+        document.getElementById('import-modal').classList.remove('active');
+    }
+
+    async importMarkdown() {
+        const content = document.getElementById('import-markdown-textarea').value.trim();
+        if (!content) {
+            alert('Please paste markdown content');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/import/markdown`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert(`Successfully imported ${result.imported_count} requests from "${result.folder_name}"`);
+                this.hideImportModal();
+                await this.loadRequests();
+            } else {
+                alert(`Import failed: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Failed to import markdown:', error);
+            alert(`Import failed: ${error.message}`);
+        }
+    }
+
+    async showExportModal() {
+        try {
+            const response = await fetch(`${API_BASE}/export/markdown`);
+            const result = await response.json();
+
+            if (result.success) {
+                document.getElementById('export-markdown-textarea').value = result.content;
+                document.getElementById('export-modal').classList.add('active');
+            } else {
+                alert(`Export failed: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Failed to export markdown:', error);
+            alert(`Export failed: ${error.message}`);
+        }
+    }
+
+    hideExportModal() {
+        document.getElementById('export-modal').classList.remove('active');
+    }
+
+    async copyExportToClipboard() {
+        const textarea = document.getElementById('export-markdown-textarea');
+        try {
+            await navigator.clipboard.writeText(textarea.value);
+            alert('Markdown copied to clipboard!');
+        } catch (error) {
+            // Fallback for older browsers
+            textarea.select();
+            document.execCommand('copy');
+            alert('Markdown copied to clipboard!');
+        }
     }
 }
 

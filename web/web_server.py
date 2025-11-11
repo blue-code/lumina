@@ -204,6 +204,40 @@ class LuminaWebServer:
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
 
+        # API: 마크다운 임포트
+        @self.app.route('/api/import/markdown', methods=['POST'])
+        def import_markdown():
+            data = request.json
+            markdown_content = data.get('content')
+            if not markdown_content:
+                return jsonify({'error': 'Markdown content required'}), 400
+
+            try:
+                from utils.markdown_parser import MarkdownAPIParser
+                imported_folder = MarkdownAPIParser.parse_content(markdown_content)
+                self.project_manager.root_folder.add_folder(imported_folder)
+                return jsonify({
+                    'success': True,
+                    'imported_count': len(imported_folder.requests),
+                    'folder_name': imported_folder.name
+                })
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        # API: 마크다운 내보내기
+        @self.app.route('/api/export/markdown', methods=['GET'])
+        def export_markdown():
+            try:
+                from utils.markdown_parser import MarkdownAPIParser
+                markdown_content = MarkdownAPIParser.generate_markdown(self.project_manager.root_folder)
+                return jsonify({
+                    'success': True,
+                    'content': markdown_content,
+                    'request_count': len(self.project_manager.root_folder.requests)
+                })
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
     def start(self):
         """서버 시작 (별도 스레드에서)"""
         if self.is_running:

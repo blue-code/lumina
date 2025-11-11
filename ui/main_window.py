@@ -140,6 +140,19 @@ class MainWindow(QMainWindow):
 
         file_menu.addSeparator()
 
+        # Import/Export 메뉴
+        import_action = QAction("Import from Markdown...", self)
+        import_action.setShortcut("Ctrl+I")
+        import_action.triggered.connect(self.import_from_markdown)
+        file_menu.addAction(import_action)
+
+        export_action = QAction("Export to Markdown...", self)
+        export_action.setShortcut("Ctrl+E")
+        export_action.triggered.connect(self.export_to_markdown)
+        file_menu.addAction(export_action)
+
+        file_menu.addSeparator()
+
         exit_action = QAction("Exit", self)
         exit_action.setShortcut("Ctrl+Q")
         exit_action.triggered.connect(self.close)
@@ -398,6 +411,58 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Success", "Project saved successfully.")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to save project:\n{str(e)}")
+
+    def import_from_markdown(self):
+        """마크다운 파일에서 임포트"""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Import from Markdown", "", "Markdown Files (*.md);;All Files (*)"
+        )
+
+        if file_path:
+            try:
+                from utils.markdown_parser import MarkdownAPIParser
+
+                # 마크다운 파일 파싱
+                imported_folder = MarkdownAPIParser.parse_file(file_path)
+
+                # 루트 폴더에 임포트된 폴더 추가
+                self.project_manager.root_folder.add_folder(imported_folder)
+
+                # UI 갱신
+                self.load_project_data()
+
+                QMessageBox.information(
+                    self, "Success",
+                    f"Successfully imported {len(imported_folder.requests)} requests from markdown."
+                )
+                self.statusBar.showMessage(f"Imported from: {file_path}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to import markdown:\n{str(e)}")
+
+    def export_to_markdown(self):
+        """마크다운 파일로 내보내기"""
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Export to Markdown", "", "Markdown Files (*.md);;All Files (*)"
+        )
+
+        if file_path:
+            try:
+                from utils.markdown_parser import MarkdownAPIParser
+
+                # 현재 편집 내용 저장
+                if self.current_request:
+                    self.request_editor.save_to_request()
+
+                # 루트 폴더를 마크다운으로 내보내기
+                MarkdownAPIParser.export_to_file(self.project_manager.root_folder, file_path)
+
+                QMessageBox.information(
+                    self, "Success",
+                    f"Successfully exported {len(self.project_manager.root_folder.requests)} requests to markdown."
+                )
+                self.statusBar.showMessage(f"Exported to: {file_path}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to export markdown:\n{str(e)}")
 
     def show_about(self):
         """About 다이얼로그"""
