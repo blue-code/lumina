@@ -21,6 +21,9 @@ class LuminaApp {
         // New Request 버튼
         document.getElementById('btn-new-request').addEventListener('click', () => this.createNewRequest());
 
+        // Clear Response 버튼
+        document.getElementById('btn-clear-response').addEventListener('click', () => this.clearResponse());
+
         // Import/Export 버튼
         document.getElementById('btn-import-md').addEventListener('click', () => this.showImportModal());
         document.getElementById('btn-export-md').addEventListener('click', () => this.showExportModal());
@@ -37,12 +40,18 @@ class LuminaApp {
 
         // Tabs
         document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', (e) => this.switchTab(e.target.dataset.tab));
+            tab.addEventListener('click', (e) => {
+                const target = e.target.closest('.tab');
+                if (target) this.switchTab(target.dataset.tab);
+            });
         });
 
         // Response Tabs
         document.querySelectorAll('.response-tab').forEach(tab => {
-            tab.addEventListener('click', (e) => this.switchResponseTab(e.target.dataset.tab));
+            tab.addEventListener('click', (e) => {
+                const target = e.target.closest('.response-tab');
+                if (target) this.switchResponseTab(target.dataset.tab);
+            });
         });
 
         // Auth Type 변경
@@ -91,7 +100,7 @@ class LuminaApp {
             `;
 
             li.addEventListener('click', () => this.selectRequest(req.id));
-            listEl.appendChild(li));
+            listEl.appendChild(li);
         });
     }
 
@@ -329,6 +338,9 @@ class LuminaApp {
         const metaEl = document.getElementById('response-meta');
         const bodyEl = document.getElementById('response-body');
 
+        // Store current response for headers tab
+        this.currentResponse = response;
+
         // Status
         if (response.error) {
             statusEl.className = 'response-status status-error';
@@ -351,8 +363,33 @@ class LuminaApp {
             }
         }
 
+        // Render headers
+        this.renderResponseHeaders(response.headers || {});
+
         // Response 패널 표시
         document.getElementById('response-panel').classList.remove('hidden');
+
+        // 히스토리 새로고침 (응답 히스토리)
+        this.loadHistory();
+    }
+
+    renderResponseHeaders(headers) {
+        const tbody = document.getElementById('response-headers-tbody');
+        tbody.innerHTML = '';
+
+        if (!headers || Object.keys(headers).length === 0) {
+            tbody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: #999;">No headers to display</td></tr>';
+            return;
+        }
+
+        Object.entries(headers).forEach(([key, value]) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${key}</strong></td>
+                <td>${value}</td>
+            `;
+            tbody.appendChild(tr);
+        });
     }
 
     clearResponse() {
@@ -387,18 +424,54 @@ class LuminaApp {
             const result = await response.json();
 
             if (result.success && result.history.length > 0) {
-                this.renderHistory(result.history);
+                this.renderInputHistory(result.history);
+                this.renderOutputHistory(result.history);
             } else {
-                document.getElementById('history-list').innerHTML =
-                    '<p class="history-empty">No history available. Send a request to see history.</p>';
+                // No history
+                document.getElementById('history-input-list').innerHTML =
+                    '<p class="history-empty">No history yet. Send a request to start tracking!</p>';
+                document.getElementById('history-output-list').innerHTML =
+                    '<p class="history-empty">No response history yet. Send a request to see responses!</p>';
             }
         } catch (error) {
             console.error('Failed to load history:', error);
         }
     }
 
-    renderHistory(history) {
-        const historyList = document.getElementById('history-list');
+    renderInputHistory(history) {
+        const historyList = document.getElementById('history-input-list');
+        historyList.innerHTML = '';
+
+        history.forEach((entry, index) => {
+            const item = document.createElement('div');
+            item.className = 'history-item';
+
+            const timestamp = new Date(entry.timestamp);
+            const timeStr = timestamp.toLocaleString();
+
+            item.innerHTML = `
+                <div class="history-item-header">
+                    <span class="history-timestamp">📤 ${timeStr}</span>
+                </div>
+                <div class="history-request-info">
+                    <strong>${entry.request.method}</strong> ${entry.request.url}
+                </div>
+                <div class="history-meta">
+                    ${entry.request.params && Object.keys(entry.request.params).length > 0 ? `Params: ${Object.keys(entry.request.params).length}` : 'No params'} |
+                    ${entry.request.headers && Object.keys(entry.request.headers).length > 0 ? `Headers: ${Object.keys(entry.request.headers).length}` : 'No headers'}
+                </div>
+            `;
+
+            item.addEventListener('click', () => {
+                this.loadHistoryRequest(entry);
+            });
+
+            historyList.appendChild(item);
+        });
+    }
+
+    renderOutputHistory(history) {
+        const historyList = document.getElementById('history-output-list');
         historyList.innerHTML = '';
 
         history.forEach(entry => {
@@ -413,7 +486,7 @@ class LuminaApp {
 
             item.innerHTML = `
                 <div class="history-item-header">
-                    <span class="history-timestamp">${timeStr}</span>
+                    <span class="history-timestamp">📥 ${timeStr}</span>
                     <span class="history-status ${statusClass}">
                         ${entry.response.status_code} ${entry.response.status_text || ''}
                     </span>
@@ -435,7 +508,25 @@ class LuminaApp {
         });
     }
 
+    loadHistoryRequest(entry) {
+        // Load a previous request configuration
+        if (confirm('Load this request configuration? Current unsaved changes will be lost.')) {
+            // Update current request with historical data
+            this.currentRequest.url = entry.request.url;
+            this.currentRequest.method = entry.request.method;
+            this.currentRequest.params = entry.request.params || {};
+            this.currentRequest.headers = entry.request.headers || {};
+            this.currentRequest.body_raw = entry.request.body_raw || '';
+
+            // Re-render the editor
+            this.renderRequestEditor();
+        }
+    }
+
     showHistoryDetail(entry) {
+        // Store current response for headers tab
+        this.currentResponse = entry.response;
+
         // 응답 탭으로 전환하고 히스토리 응답 표시
         this.switchResponseTab('response');
 
@@ -462,6 +553,9 @@ class LuminaApp {
         } else {
             bodyEl.textContent = entry.response.error || 'No response body';
         }
+
+        // Render headers
+        this.renderResponseHeaders(entry.response.headers || {});
 
         document.getElementById('response-panel').classList.remove('hidden');
     }

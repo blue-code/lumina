@@ -23,11 +23,22 @@
         <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
-                <h3>Requests</h3>
-                <div class="sidebar-actions">
-                    <button class="btn-new" id="btn-new-request">+ New</button>
-                    <button class="btn-import" id="btn-import-md" title="Import from Markdown">📥 Import</button>
-                    <button class="btn-export" id="btn-export-md" title="Export to Markdown">📤 Export</button>
+                <h3>📂 Requests</h3>
+                <div class="sidebar-help">
+                    💡 Click a request to edit
+                </div>
+            </div>
+            <div class="sidebar-actions">
+                <button class="btn-new" id="btn-new-request" title="Create a new request">
+                    ➕ New Request
+                </button>
+                <div class="sidebar-actions-row">
+                    <button class="btn-import" id="btn-import-md" title="Import requests from Markdown">
+                        📥 Import
+                    </button>
+                    <button class="btn-export" id="btn-export-md" title="Export requests to Markdown">
+                        📤 Export
+                    </button>
                 </div>
             </div>
             <ul class="request-list" id="request-list">
@@ -39,11 +50,14 @@
         <div class="modal" id="import-modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>Import from Markdown</h3>
+                    <h3>📥 Import from Markdown</h3>
                     <button class="modal-close" id="btn-close-import">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <textarea id="import-markdown-textarea" placeholder="Paste your markdown content here..."></textarea>
+                    <div class="tab-help" style="margin-bottom: 1rem;">
+                        💡 Paste your markdown API documentation here. Supports standard markdown format with HTTP methods and URLs.
+                    </div>
+                    <textarea id="import-markdown-textarea" placeholder="Paste your markdown content here...&#10;&#10;Example:&#10;# My API Collection&#10;&#10;## Get Users&#10;GET https://api.example.com/users&#10;&#10;## Create User&#10;POST https://api.example.com/users"></textarea>
                 </div>
                 <div class="modal-footer">
                     <button class="btn-cancel" id="btn-cancel-import">Cancel</button>
@@ -56,14 +70,17 @@
         <div class="modal" id="export-modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>Export to Markdown</h3>
+                    <h3>📤 Export to Markdown</h3>
                     <button class="modal-close" id="btn-close-export">&times;</button>
                 </div>
                 <div class="modal-body">
+                    <div class="tab-help" style="margin-bottom: 1rem;">
+                        💡 Your API collection exported as markdown. Copy and save it to a file.
+                    </div>
                     <textarea id="export-markdown-textarea" readonly></textarea>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn-primary" id="btn-copy-export">Copy to Clipboard</button>
+                    <button class="btn-primary" id="btn-copy-export">📋 Copy to Clipboard</button>
                     <button class="btn-cancel" id="btn-close-export2">Close</button>
                 </div>
             </div>
@@ -83,20 +100,34 @@
                         <option value="HEAD">HEAD</option>
                         <option value="OPTIONS">OPTIONS</option>
                     </select>
-                    <input type="text" class="input-url" id="input-url" placeholder="Enter request URL">
+                    <input type="text" class="input-url" id="input-url" placeholder="Enter request URL (e.g., https://api.example.com/users)">
                     <button class="btn-send" id="btn-send">Send</button>
                 </div>
 
                 <!-- Tabs -->
                 <div class="tabs">
-                    <button class="tab active" data-tab="params">Params</button>
-                    <button class="tab" data-tab="headers">Headers</button>
-                    <button class="tab" data-tab="body">Body</button>
-                    <button class="tab" data-tab="auth">Auth</button>
+                    <button class="tab active" data-tab="params" title="Add URL query parameters">
+                        <span class="tab-icon">🔗</span> Params
+                    </button>
+                    <button class="tab" data-tab="headers" title="Add HTTP headers">
+                        <span class="tab-icon">📋</span> Headers
+                    </button>
+                    <button class="tab" data-tab="body" title="Set request body (JSON, XML, etc.)">
+                        <span class="tab-icon">📝</span> Body
+                    </button>
+                    <button class="tab" data-tab="auth" title="Configure authentication">
+                        <span class="tab-icon">🔐</span> Auth
+                    </button>
+                    <button class="tab" data-tab="history-input" title="View request history">
+                        <span class="tab-icon">⏱️</span> History
+                    </button>
                 </div>
 
                 <!-- Tab Contents -->
                 <div class="tab-content active" id="tab-params">
+                    <div class="tab-help">
+                        🔗 <strong>Query Parameters:</strong> Add URL parameters (e.g., page=1, limit=10)
+                    </div>
                     <table class="key-value-table">
                         <thead>
                             <tr>
@@ -112,6 +143,9 @@
                 </div>
 
                 <div class="tab-content" id="tab-headers">
+                    <div class="tab-help">
+                        📋 <strong>Headers:</strong> Add HTTP headers (e.g., Content-Type, Authorization)
+                    </div>
                     <table class="key-value-table">
                         <thead>
                             <tr>
@@ -127,87 +161,148 @@
                 </div>
 
                 <div class="tab-content" id="tab-body">
-                    <textarea id="body-raw" placeholder="Enter raw body (JSON, XML, text, etc.)"></textarea>
+                    <div class="tab-help">
+                        📝 <strong>Request Body:</strong> Add data to send with your request (for POST, PUT, PATCH)
+                    </div>
+                    <textarea id="body-raw" placeholder="Enter raw body (JSON, XML, text, etc.)&#10;&#10;Example JSON:&#10;{&#10;  &quot;name&quot;: &quot;John Doe&quot;,&#10;  &quot;email&quot;: &quot;john@example.com&quot;&#10;}"></textarea>
                 </div>
 
                 <div class="tab-content" id="tab-auth">
+                    <div class="tab-help">
+                        💡 <strong>Authentication:</strong> Add credentials to access protected APIs
+                    </div>
                     <div class="auth-container">
                         <div class="form-group">
                             <label for="auth-type">Auth Type:</label>
                             <select id="auth-type" class="auth-select">
-                                <option value="none">No Auth</option>
-                                <option value="basic">Basic Auth</option>
-                                <option value="bearer">Bearer Token</option>
-                                <option value="apikey">API Key</option>
+                                <option value="none">🚫 No Auth (Public API)</option>
+                                <option value="basic">👤 Basic Auth (Username & Password)</option>
+                                <option value="bearer">🎫 Bearer Token (JWT, OAuth)</option>
+                                <option value="apikey">🔑 API Key (Custom Key)</option>
                             </select>
                         </div>
 
                         <!-- Basic Auth -->
                         <div id="auth-basic" class="auth-section hidden">
-                            <div class="form-group">
-                                <label>Username:</label>
-                                <input type="text" id="auth-basic-username" placeholder="Enter username">
+                            <div class="auth-example">
+                                <strong>Example:</strong> Used for simple HTTP authentication
                             </div>
                             <div class="form-group">
-                                <label>Password:</label>
-                                <input type="password" id="auth-basic-password" placeholder="Enter password">
+                                <label>👤 Username:</label>
+                                <input type="text" id="auth-basic-username" placeholder="e.g., admin">
+                            </div>
+                            <div class="form-group">
+                                <label>🔒 Password:</label>
+                                <input type="password" id="auth-basic-password" placeholder="Your password">
                             </div>
                         </div>
 
                         <!-- Bearer Token -->
                         <div id="auth-bearer" class="auth-section hidden">
+                            <div class="auth-example">
+                                <strong>Example:</strong> Common for JWT tokens and OAuth 2.0
+                            </div>
                             <div class="form-group">
-                                <label>Token:</label>
-                                <input type="text" id="auth-bearer-token" placeholder="Enter bearer token">
+                                <label>🎫 Token:</label>
+                                <input type="text" id="auth-bearer-token" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
                             </div>
                         </div>
 
                         <!-- API Key -->
                         <div id="auth-apikey" class="auth-section hidden">
-                            <div class="form-group">
-                                <label>Key Name:</label>
-                                <input type="text" id="auth-apikey-name" placeholder="e.g., X-API-Key">
+                            <div class="auth-example">
+                                <strong>Example:</strong> Custom API key for third-party services
                             </div>
                             <div class="form-group">
-                                <label>Key Value:</label>
-                                <input type="text" id="auth-apikey-value" placeholder="Enter API key">
+                                <label>🔑 Key Name:</label>
+                                <input type="text" id="auth-apikey-name" placeholder="e.g., X-API-Key or api_key">
                             </div>
                             <div class="form-group">
-                                <label>Add to:</label>
+                                <label>💎 Key Value:</label>
+                                <input type="text" id="auth-apikey-value" placeholder="Your API key value">
+                            </div>
+                            <div class="form-group">
+                                <label>📍 Add to:</label>
                                 <select id="auth-apikey-location">
-                                    <option value="header">Header</option>
+                                    <option value="header">Header (Recommended)</option>
                                     <option value="query">Query Parameter</option>
                                 </select>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <div class="tab-content" id="tab-history-input">
+                    <div class="tab-help">
+                        ⏱️ <strong>Request History:</strong> Previously sent requests for this endpoint
+                    </div>
+                    <div class="history-input-list" id="history-input-list">
+                        <p class="history-empty">No history yet. Send a request to start tracking!</p>
+                    </div>
+                </div>
             </div>
 
             <!-- Response Panel -->
             <div class="response-panel hidden" id="response-panel">
-                <div class="response-header">
-                    <div class="response-status" id="response-status">200 OK</div>
-                    <div class="response-meta" id="response-meta">Time: 123 ms | Size: 456 bytes</div>
+                <div class="response-header-section">
+                    <div class="response-header-title">
+                        <h3>📤 Response</h3>
+                        <div class="response-header-actions">
+                            <button class="btn-clear-response" id="btn-clear-response" title="Clear response">
+                                🗑️ Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div class="response-status-bar">
+                        <div class="response-status" id="response-status">200 OK</div>
+                        <div class="response-meta" id="response-meta">Time: 123 ms | Size: 456 bytes</div>
+                    </div>
                 </div>
 
                 <!-- Response Tabs -->
                 <div class="response-tabs">
-                    <button class="response-tab active" data-tab="response">Response</button>
-                    <button class="response-tab" data-tab="history">History</button>
+                    <button class="response-tab active" data-tab="response" title="View response body">
+                        <span class="tab-icon">📋</span> Body
+                    </button>
+                    <button class="response-tab" data-tab="response-headers" title="View response headers">
+                        <span class="tab-icon">📑</span> Headers
+                    </button>
+                    <button class="response-tab" data-tab="history-output" title="View response history">
+                        <span class="tab-icon">📊</span> History
+                    </button>
                 </div>
 
-                <!-- Response Tab Content -->
+                <!-- Response Body Tab -->
                 <div class="response-tab-content active" id="response-tab-response">
                     <div class="response-body">
                         <pre id="response-body"></pre>
                     </div>
                 </div>
 
-                <!-- History Tab Content -->
-                <div class="response-tab-content" id="response-tab-history">
-                    <div class="history-list" id="history-list">
-                        <p class="history-empty">No history available. Send a request to see history.</p>
+                <!-- Response Headers Tab -->
+                <div class="response-tab-content" id="response-tab-response-headers">
+                    <div class="response-headers-content">
+                        <table class="response-headers-table" id="response-headers-table">
+                            <thead>
+                                <tr>
+                                    <th>Header Name</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody id="response-headers-tbody">
+                                <tr><td colspan="2">No headers to display</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- History Output Tab -->
+                <div class="response-tab-content" id="response-tab-history-output">
+                    <div class="tab-help">
+                        📊 <strong>Response History:</strong> Click any item to view that response
+                    </div>
+                    <div class="history-list" id="history-output-list">
+                        <p class="history-empty">No response history yet. Send a request to see responses!</p>
                     </div>
                 </div>
             </div>
