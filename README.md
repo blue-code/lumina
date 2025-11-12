@@ -140,6 +140,7 @@ Request URL:
 lumina/
 ├── main.py                      # 데스크톱 앱 메인
 ├── web_server_standalone.py    # 웹 서버 단독 실행
+├── test_concurrency.py          # 동시성 테스트 스크립트
 ├── requirements.txt             # 의존성 목록
 ├── sample_api.md                # 마크다운 샘플 파일
 ├── models/                      # 데이터 모델
@@ -212,6 +213,24 @@ Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ## ✨ 주요 기능
 
+### 🔒 동시 작업자 지원 (Thread-Safe & Session Isolation)
+
+Lumina는 서버 환경에서 여러 사용자가 동시에 작업해도 안전합니다:
+
+- **Thread-Safe 구현**: 모든 프로젝트 매니저 작업에 RLock 적용
+- **세션별 프로젝트 격리**: 각 웹 사용자가 독립적인 프로젝트 공간 보유
+- **Race Condition 방지**: 동시 읽기/쓰기 작업에서 데이터 무결성 보장
+- **동시성 테스트 통과**: 수백 개의 동시 작업 검증 완료
+
+**동시성 테스트 실행:**
+```bash
+python test_concurrency.py
+```
+
+**작동 방식:**
+- **데스크톱 앱 모드**: 단일 프로젝트를 데스크톱과 웹 UI가 공유
+- **웹 서버 단독 모드**: 각 사용자는 세션별로 독립적인 프로젝트 보유
+
 ### 듀얼 인터페이스
 - **데스크톱 앱**: PyQt5 기반 네이티브 애플리케이션
 - **웹 인터페이스**: Flask 기반 브라우저 접근
@@ -247,6 +266,7 @@ Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 - WebSocket 지원
 - GraphQL 지원
 - 플러그인 시스템
+- 세션 타임아웃 및 자동 정리 기능
 
 ## 📝 라이선스
 
