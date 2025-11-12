@@ -40,6 +40,23 @@ class LuminaApp {
             tab.addEventListener('click', (e) => this.switchTab(e.target.dataset.tab));
         });
 
+        // Response Tabs
+        document.querySelectorAll('.response-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => this.switchResponseTab(e.target.dataset.tab));
+        });
+
+        // Auth Type 변경
+        document.getElementById('auth-type').addEventListener('change', (e) => this.onAuthTypeChange(e.target.value));
+
+        // Auth 입력 필드 변경
+        ['auth-basic-username', 'auth-basic-password', 'auth-bearer-token',
+         'auth-apikey-name', 'auth-apikey-value', 'auth-apikey-location'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('change', () => this.saveCurrentRequest());
+            }
+        });
+
         // URL 입력 변경
         document.getElementById('input-url').addEventListener('change', () => this.saveCurrentRequest());
 
@@ -105,6 +122,50 @@ class LuminaApp {
 
         // Body
         document.getElementById('body-raw').value = this.currentRequest.body_raw || '';
+
+        // Auth
+        this.renderAuth();
+
+        // Load history
+        this.loadHistory();
+    }
+
+    renderAuth() {
+        const authType = this.currentRequest.auth_type || 'none';
+        document.getElementById('auth-type').value = authType;
+
+        // Show/hide auth sections
+        this.onAuthTypeChange(authType);
+
+        // Set auth values
+        if (authType === 'basic') {
+            document.getElementById('auth-basic-username').value = this.currentRequest.auth_basic_username || '';
+            document.getElementById('auth-basic-password').value = this.currentRequest.auth_basic_password || '';
+        } else if (authType === 'bearer') {
+            document.getElementById('auth-bearer-token').value = this.currentRequest.auth_bearer_token || '';
+        } else if (authType === 'apikey') {
+            document.getElementById('auth-apikey-name').value = this.currentRequest.auth_api_key_name || '';
+            document.getElementById('auth-apikey-value').value = this.currentRequest.auth_api_key_value || '';
+            document.getElementById('auth-apikey-location').value = this.currentRequest.auth_api_key_location || 'header';
+        }
+    }
+
+    onAuthTypeChange(authType) {
+        // Hide all auth sections
+        document.querySelectorAll('.auth-section').forEach(section => {
+            section.classList.add('hidden');
+        });
+
+        // Show selected auth section
+        if (authType === 'basic') {
+            document.getElementById('auth-basic').classList.remove('hidden');
+        } else if (authType === 'bearer') {
+            document.getElementById('auth-bearer').classList.remove('hidden');
+        } else if (authType === 'apikey') {
+            document.getElementById('auth-apikey').classList.remove('hidden');
+        }
+
+        this.saveCurrentRequest();
     }
 
     renderKeyValueTable(type, data) {
@@ -169,6 +230,23 @@ class LuminaApp {
     async saveCurrentRequest() {
         if (!this.currentRequest) return;
 
+        // Get auth data
+        const authType = document.getElementById('auth-type').value;
+        const authData = {
+            auth_type: authType
+        };
+
+        if (authType === 'basic') {
+            authData.auth_basic_username = document.getElementById('auth-basic-username').value;
+            authData.auth_basic_password = document.getElementById('auth-basic-password').value;
+        } else if (authType === 'bearer') {
+            authData.auth_bearer_token = document.getElementById('auth-bearer-token').value;
+        } else if (authType === 'apikey') {
+            authData.auth_api_key_name = document.getElementById('auth-apikey-name').value;
+            authData.auth_api_key_value = document.getElementById('auth-apikey-value').value;
+            authData.auth_api_key_location = document.getElementById('auth-apikey-location').value;
+        }
+
         const updatedData = {
             name: this.currentRequest.name,
             url: document.getElementById('input-url').value,
@@ -176,7 +254,8 @@ class LuminaApp {
             headers: this.getKeyValueData('headers'),
             params: this.getKeyValueData('params'),
             body_raw: document.getElementById('body-raw').value,
-            body_type: 'raw'
+            body_type: 'raw',
+            ...authData
         };
 
         try {
@@ -230,6 +309,9 @@ class LuminaApp {
 
             const result = await response.json();
             this.renderResponse(result);
+
+            // 히스토리 새로고침
+            await this.loadHistory();
         } catch (error) {
             console.error('Failed to send request:', error);
             this.renderResponse({
@@ -285,6 +367,103 @@ class LuminaApp {
         // 선택된 탭 활성화
         document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
         document.getElementById(`tab-${tabName}`).classList.add('active');
+    }
+
+    switchResponseTab(tabName) {
+        // 모든 응답 탭 비활성화
+        document.querySelectorAll('.response-tab').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.response-tab-content').forEach(content => content.classList.remove('active'));
+
+        // 선택된 탭 활성화
+        document.querySelector(`.response-tab[data-tab="${tabName}"]`).classList.add('active');
+        document.getElementById(`response-tab-${tabName}`).classList.add('active');
+    }
+
+    async loadHistory() {
+        if (!this.currentRequest) return;
+
+        try {
+            const response = await fetch(`${API_BASE}/history/${this.currentRequest.id}?limit=20`);
+            const result = await response.json();
+
+            if (result.success && result.history.length > 0) {
+                this.renderHistory(result.history);
+            } else {
+                document.getElementById('history-list').innerHTML =
+                    '<p class="history-empty">No history available. Send a request to see history.</p>';
+            }
+        } catch (error) {
+            console.error('Failed to load history:', error);
+        }
+    }
+
+    renderHistory(history) {
+        const historyList = document.getElementById('history-list');
+        historyList.innerHTML = '';
+
+        history.forEach(entry => {
+            const item = document.createElement('div');
+            item.className = 'history-item';
+
+            const timestamp = new Date(entry.timestamp);
+            const timeStr = timestamp.toLocaleString();
+
+            const statusClass = entry.response.status_code >= 200 && entry.response.status_code < 300
+                ? 'success' : 'error';
+
+            item.innerHTML = `
+                <div class="history-item-header">
+                    <span class="history-timestamp">${timeStr}</span>
+                    <span class="history-status ${statusClass}">
+                        ${entry.response.status_code} ${entry.response.status_text || ''}
+                    </span>
+                </div>
+                <div class="history-request-info">
+                    <strong>${entry.request.method}</strong> ${entry.request.url}
+                </div>
+                <div class="history-meta">
+                    Time: ${entry.response.elapsed_ms.toFixed(0)} ms |
+                    Size: ${entry.response.size_bytes} bytes
+                </div>
+            `;
+
+            item.addEventListener('click', () => {
+                this.showHistoryDetail(entry);
+            });
+
+            historyList.appendChild(item);
+        });
+    }
+
+    showHistoryDetail(entry) {
+        // 응답 탭으로 전환하고 히스토리 응답 표시
+        this.switchResponseTab('response');
+
+        const bodyEl = document.getElementById('response-body');
+        const statusEl = document.getElementById('response-status');
+        const metaEl = document.getElementById('response-meta');
+
+        const statusClass = entry.response.status_code >= 200 && entry.response.status_code < 300
+            ? 'status-success' : 'status-error';
+
+        statusEl.className = `response-status ${statusClass}`;
+        statusEl.textContent = `${entry.response.status_code} ${entry.response.status_text || ''}`;
+
+        metaEl.textContent = `Time: ${entry.response.elapsed_ms.toFixed(0)} ms | Size: ${entry.response.size_bytes} bytes`;
+
+        // Body
+        if (entry.response.body) {
+            try {
+                const jsonData = JSON.parse(entry.response.body);
+                bodyEl.textContent = JSON.stringify(jsonData, null, 2);
+            } catch {
+                bodyEl.textContent = entry.response.body;
+            }
+        } else {
+            bodyEl.textContent = entry.response.error || 'No response body';
+        }
+
+        document.getElementById('response-panel').classList.remove('hidden');
     }
 
     // Import/Export 기능

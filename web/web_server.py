@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.project_manager import ProjectManager
 from core.http_client import HttpClient
 from models.request_model import RequestModel, HttpMethod, BodyType, AuthType
+from models.history_model import HistoryManager
 
 
 class LuminaWebServer:
@@ -39,9 +40,13 @@ class LuminaWebServer:
         self.sessions: Dict[str, ProjectManager] = {}
         self.sessions_lock = threading.RLock()
 
+        # 세션별 히스토리 매니저 저장소
+        self.histories: Dict[str, HistoryManager] = {}
+
         # 레거시 지원: 데스크톱 앱과의 공유를 위한 기본 프로젝트 (옵션)
         self.project_manager = None  # Will be set by desktop app if needed
         self.http_client = None
+        self.history_manager = None  # Shared history for desktop mode
 
         # 서버 스레드
         self.server_thread = None
@@ -81,6 +86,24 @@ class LuminaWebServer:
         pm = self.get_session_project_manager()
         return HttpClient(pm.env_manager)
 
+    def get_session_history_manager(self) -> HistoryManager:
+        """현재 세션의 히스토리 매니저 가져오기"""
+        # 데스크톱 앱에서 공유 모드일 경우
+        if self.history_manager is not None:
+            return self.history_manager
+
+        # 세션별 히스토리 매니저
+        if 'session_id' not in session:
+            session['session_id'] = str(uuid.uuid4())
+
+        session_id = session['session_id']
+
+        with self.sessions_lock:
+            if session_id not in self.histories:
+                self.histories[session_id] = HistoryManager()
+
+            return self.histories[session_id]
+
     def setup_routes(self):
         """라우트 설정"""
 
@@ -88,6 +111,11 @@ class LuminaWebServer:
         @self.app.route('/')
         def index():
             return render_template('index.html')
+
+        # API 문서 페이지
+        @self.app.route('/docs')
+        def api_docs():
+            return render_template('api_docs.html')
 
         # API: 프로젝트 정보
         @self.app.route('/api/project', methods=['GET'])
@@ -185,12 +213,16 @@ class LuminaWebServer:
         def execute_request(request_id):
             pm = self.get_session_project_manager()
             http_client = self.get_session_http_client()
+            history_mgr = self.get_session_history_manager()
             req = pm.find_request_by_id(request_id)
             if not req:
                 return jsonify({'error': 'Request not found'}), 404
 
             # 요청 실행
             response = http_client.send_request(req)
+
+            # 히스토리에 저장
+            history_mgr.add_entry(req, response)
 
             # 응답 변환
             return jsonify({
@@ -296,6 +328,43 @@ class LuminaWebServer:
                 })
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
+
+        # API: 히스토리 조회
+        @self.app.route('/api/history/<request_id>', methods=['GET'])
+        def get_history(request_id):
+            history_mgr = self.get_session_history_manager()
+            limit = request.args.get('limit', 20, type=int)
+            history = history_mgr.get_history(request_id, limit)
+            return jsonify({
+                'success': True,
+                'request_id': request_id,
+                'count': len(history),
+                'history': history
+            })
+
+        # API: 전체 히스토리 조회
+        @self.app.route('/api/history', methods=['GET'])
+        def get_all_history():
+            history_mgr = self.get_session_history_manager()
+            all_history = history_mgr.get_all_histories()
+            return jsonify({
+                'success': True,
+                'histories': all_history
+            })
+
+        # API: 히스토리 삭제
+        @self.app.route('/api/history/<request_id>', methods=['DELETE'])
+        def clear_history(request_id):
+            history_mgr = self.get_session_history_manager()
+            history_mgr.clear_history(request_id)
+            return jsonify({'success': True})
+
+        # API: 전체 히스토리 삭제
+        @self.app.route('/api/history', methods=['DELETE'])
+        def clear_all_history():
+            history_mgr = self.get_session_history_manager()
+            history_mgr.clear_history()
+            return jsonify({'success': True})
 
     def start(self):
         """서버 시작 (별도 스레드에서)"""

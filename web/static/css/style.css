@@ -33,15 +33,37 @@ body {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.header h1 {
-    font-size: 1.8rem;
-    font-weight: 600;
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.header p {
+.header-title h1 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.header-title p {
     font-size: 0.9rem;
     opacity: 0.9;
     margin-top: 0.25rem;
+}
+
+.header-link {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border: 2px solid white;
+    border-radius: 4px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.header-link:hover {
+    background: white;
+    color: #667eea;
 }
 
 /* Main Container */
@@ -438,4 +460,138 @@ textarea {
 
 .btn-cancel:hover {
     background: #d0d0d0;
+}
+
+/* Auth Tab */
+.auth-container {
+    padding: 1rem 0;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+.auth-select {
+    margin-bottom: 1rem;
+}
+
+.auth-section {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f9f9f9;
+    border-radius: 4px;
+}
+
+/* Response Tabs */
+.response-tabs {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.response-tab {
+    padding: 0.5rem 1rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.875rem;
+    border-bottom: 2px solid transparent;
+}
+
+.response-tab:hover {
+    background: #f5f5f5;
+}
+
+.response-tab.active {
+    border-bottom-color: var(--primary-color);
+    font-weight: 600;
+}
+
+.response-tab-content {
+    display: none;
+}
+
+.response-tab-content.active {
+    display: block;
+}
+
+/* History List */
+.history-list {
+    padding: 1.5rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.history-empty {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 2rem;
+}
+
+.history-item {
+    background: #f9f9f9;
+    border-left: 3px solid var(--primary-color);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.history-item:hover {
+    background: #f0f0f0;
+}
+
+.history-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.history-timestamp {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.history-status {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.history-status.success {
+    color: var(--success-color);
+}
+
+.history-status.error {
+    color: var(--error-color);
+}
+
+.history-request-info {
+    font-size: 0.875rem;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+}
+
+.history-meta {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
 }

@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation - Lumina</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .docs-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .docs-header {
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+        }
+        .docs-header h1 {
+            color: #667eea;
+            margin: 0;
+        }
+        .docs-section {
+            margin-bottom: 3rem;
+        }
+        .docs-section h2 {
+            color: #333;
+            border-left: 4px solid #667eea;
+            padding-left: 1rem;
+            margin-bottom: 1rem;
+        }
+        .endpoint {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .endpoint-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .method-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        .method-get { background: #4CAF50; color: white; }
+        .method-post { background: #2196F3; color: white; }
+        .method-put { background: #FF9800; color: white; }
+        .method-delete { background: #f44336; color: white; }
+        .endpoint-path {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        .endpoint-description {
+            margin-bottom: 1rem;
+            color: #555;
+        }
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 1rem;
+            color: #667eea;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .params-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0.5rem;
+        }
+        .params-table th,
+        .params-table td {
+            text-align: left;
+            padding: 0.5rem;
+            border: 1px solid #e0e0e0;
+        }
+        .params-table th {
+            background: #f0f0f0;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body style="background: #f5f5f5;">
+    <div class="docs-container">
+        <a href="/" class="back-link">← Back to App</a>
+
+        <div class="docs-header">
+            <h1>✨ Lumina API Documentation</h1>
+            <p>RESTful API endpoints for managing requests, executing HTTP calls, and viewing history</p>
+        </div>
+
+        <!-- Project Management -->
+        <div class="docs-section">
+            <h2>Project Management</h2>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method-badge method-get">GET</span>
+                    <span class="endpoint-path">/api/project</span>
+                </div>
+                <div class="endpoint-description">Get current project information</div>
+                <strong>Response:</strong>
+                <pre class="code-block">{
+  "name": "Sample API Project",
+  "folder": {
+    "id": "...",
+    "name": "Root",
+    "requests": [...]
+  }
+}</pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method-badge method-post">POST</span>
+                    <span class="endpoint-path">/api/project/save</span>
+                </div>
+                <div class="endpoint-description">Save project to file</div>
+                <strong>Request Body:</strong>
+                <pre class="code-block">{
+  "file_path": "my_project.json"
+}</pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method-badge method-post">POST</span>
+                    <span class="endpoint-path">/api/project/load</span>
+                </div>
+                <div class="endpoint-description">Load project from file</div>
+                <strong>Request Body:</strong>
+                <pre class="code-block">{
+  "file_path": "my_project.json"
+}</pre>
+            </div>
+        </div>
+
+        <!-- Request Management -->
+        <div class="docs-section">
+            <h2>Request Management</h2>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method-badge method-get">GET</span>
+                    <span class="endpoint-path">/api/requests</span>
+                </div>
+                <div class="endpoint-description">Get all requests</div>
+                <strong>Response:</strong>
+                <pre class="code-block">[
+  {
+    "id": "...",
+    "name": "Get Users",
+    "method": "GET",
+    "url": "https://api.example.com/users",
+    "headers": {...},
+    "params": {...}
+  }
+]</pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method-badge method-get">GET</span>
+                    <span class="endpoint-path">/api/requests/{request_id}</span>
+                </div>
+                <div class="endpoint-description">Get specific request by ID</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method-badge method-post">POST</span>
+                    <span class="endpoint-path">/api/requests</span>
+                </div>
+                <div class="endpoint-description">Create new request</div>
+                <strong>Request Body:</strong>
+                <pre class="code-block">{
+  "name": "New Request",
+  "url": "https://api.example.com/endpoint",
+  "method": "GET"
+}</pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method-badge method-put">PUT</span>
+                    <span class="endpoint-path">/api/requests/{request_id}</span>
+                </div>
+                <div class="endpoint-description">Update request</div>
+                <strong>Request Body:</strong>
+                <pre class="code-block">{
+  "name": "Updated Name",
+  "url": "https://api.example.com/new-endpoint",
+  "method": "POST",
+  "headers": {"Content-Type": "application/json"},
+  "params": {"key": "value"},
+  "body_raw": "{\"data\": \"value\"}",
+  "auth_type": "bearer",
+  "auth_bearer_token": "your-token-here"
+}</pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method-badge method-delete">DELETE</span>
+                    <span class="endpoint-path">/api/requests/{request_id}</span>
+                </div>
+                <div class="endpoint-description">Delete request</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method-badge method-post">POST</span>
+                    <span class="endpoint-path">/api/requests/{request_id}/execute</span>
+                </div>
+                <div class="endpoint-description">Execute HTTP request and save to history</div>
+                <strong>Response:</strong>
+                <pre class="code-block">{
+  "status_code": 200,
+  "status_text": "OK",
+  "headers": {...},
+  "body": "...",
+  "elapsed_ms": 123.45,
+  "size_bytes": 456,
+  "content_type": "application/json"
+}</pre>
+            </div>
+        </div>
+
+        <!-- History -->
+        <div class="docs-section">
+            <h2>History</h2>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method-badge method-get">GET</span>
+                    <span class="endpoint-path">/api/history/{request_id}</span>
+                </div>
+                <div class="endpoint-description">Get history for specific request</div>
+                <strong>Query Parameters:</strong>
+                <table class="params-table">
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td>limit</td>
+                        <td>integer</td>
+                        <td>Maximum number of history entries (default: 20)</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method-badge method-get">GET</span>
+                    <span class="endpoint-path">/api/history</span>
+                </div>
+                <div class="endpoint-description">Get all history entries</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method-badge method-delete">DELETE</span>
+                    <span class="endpoint-path">/api/history/{request_id}</span>
+                </div>
+                <div class="endpoint-description">Clear history for specific request</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method-badge method-delete">DELETE</span>
+                    <span class="endpoint-path">/api/history</span>
+                </div>
+                <div class="endpoint-description">Clear all history</div>
+            </div>
+        </div>
+
+        <!-- Import/Export -->
+        <div class="docs-section">
+            <h2>Import/Export</h2>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method-badge method-post">POST</span>
+                    <span class="endpoint-path">/api/import/markdown</span>
+                </div>
+                <div class="endpoint-description">Import API collection from markdown</div>
+                <strong>Request Body:</strong>
+                <pre class="code-block">{
+  "content": "# API Collection\n\n## Request Name\n..."
+}</pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method-badge method-get">GET</span>
+                    <span class="endpoint-path">/api/export/markdown</span>
+                </div>
+                <div class="endpoint-description">Export all requests as markdown</div>
+                <strong>Response:</strong>
+                <pre class="code-block">{
+  "success": true,
+  "content": "# Project Name\n\n## Request...",
+  "request_count": 5
+}</pre>
+            </div>
+        </div>
+
+        <!-- Authentication -->
+        <div class="docs-section">
+            <h2>Authentication Types</h2>
+            <p>Lumina supports multiple authentication methods:</p>
+
+            <div class="endpoint">
+                <strong>No Auth</strong>
+                <pre class="code-block">{
+  "auth_type": "none"
+}</pre>
+            </div>
+
+            <div class="endpoint">
+                <strong>Basic Auth</strong>
+                <pre class="code-block">{
+  "auth_type": "basic",
+  "auth_basic_username": "user",
+  "auth_basic_password": "password"
+}</pre>
+            </div>
+
+            <div class="endpoint">
+                <strong>Bearer Token</strong>
+                <pre class="code-block">{
+  "auth_type": "bearer",
+  "auth_bearer_token": "your-jwt-token-here"
+}</pre>
+            </div>
+
+            <div class="endpoint">
+                <strong>API Key</strong>
+                <pre class="code-block">{
+  "auth_type": "apikey",
+  "auth_api_key_name": "X-API-Key",
+  "auth_api_key_value": "your-api-key",
+  "auth_api_key_location": "header"  // or "query"
+}</pre>
+            </div>
+        </div>
+
+        <!-- Environment Variables -->
+        <div class="docs-section">
+            <h2>Environment Variables</h2>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method-badge method-get">GET</span>
+                    <span class="endpoint-path">/api/environments</span>
+                </div>
+                <div class="endpoint-description">Get all environments</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method-badge method-get">GET</span>
+                    <span class="endpoint-path">/api/environments/active</span>
+                </div>
+                <div class="endpoint-description">Get active environment</div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method-badge method-post">POST</span>
+                    <span class="endpoint-path">/api/environments/active</span>
+                </div>
+                <div class="endpoint-description">Set active environment</div>
+                <strong>Request Body:</strong>
+                <pre class="code-block">{
+  "environment_id": "environment-uuid-here"
+}</pre>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
