@@ -140,6 +140,58 @@ class ProjectManager:
 
             return requests
 
+    def remove_folder_recursive(self, folder_id: str, parent: Optional[RequestFolder] = None) -> bool:
+        """
+        폴더를 재귀적으로 삭제
+
+        Args:
+            folder_id: 삭제할 폴더 ID
+            parent: 부모 폴더 (None이면 루트부터)
+
+        Returns:
+            삭제 성공 여부
+        """
+        with self._lock:
+            if parent is None:
+                parent = self.root_folder
+
+            # 직접 자식 폴더 검색 및 삭제
+            if parent.remove_folder(folder_id):
+                return True
+
+            # 하위 폴더에서 재귀적으로 삭제
+            for sub_folder in parent.folders:
+                if self.remove_folder_recursive(folder_id, sub_folder):
+                    return True
+
+            return False
+
+    def remove_request_recursive(self, request_id: str, folder: Optional[RequestFolder] = None) -> bool:
+        """
+        요청을 재귀적으로 삭제
+
+        Args:
+            request_id: 삭제할 요청 ID
+            folder: 검색할 폴더 (None이면 루트부터)
+
+        Returns:
+            삭제 성공 여부
+        """
+        with self._lock:
+            if folder is None:
+                folder = self.root_folder
+
+            # 현재 폴더에서 요청 삭제 시도
+            if folder.remove_request(request_id):
+                return True
+
+            # 하위 폴더에서 재귀적으로 삭제
+            for sub_folder in folder.folders:
+                if self.remove_request_recursive(request_id, sub_folder):
+                    return True
+
+            return False
+
     def create_sample_project(self):
         """샘플 프로젝트 생성 (테스트용)"""
         with self._lock:

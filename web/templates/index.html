@@ -25,10 +25,13 @@
             <div class="sidebar-header">
                 <h3>📂 Requests</h3>
                 <div class="sidebar-help">
-                    💡 Click a request to edit
+                    💡 Right-click for options
                 </div>
             </div>
             <div class="sidebar-actions">
+                <button class="btn-new" id="btn-new-folder" title="Create a new folder">
+                    📁 New Folder
+                </button>
                 <button class="btn-new" id="btn-new-request" title="Create a new request">
                     ➕ New Request
                 </button>
@@ -41,9 +44,9 @@
                     </button>
                 </div>
             </div>
-            <ul class="request-list" id="request-list">
-                <!-- Requests will be loaded here -->
-            </ul>
+            <div class="folder-tree" id="folder-tree">
+                <!-- Folder tree will be loaded here -->
+            </div>
         </div>
 
         <!-- Import Markdown Modal -->
@@ -163,6 +166,11 @@
                 <div class="tab-content" id="tab-body">
                     <div class="tab-help">
                         📝 <strong>Request Body:</strong> Add data to send with your request (for POST, PUT, PATCH)
+                    </div>
+                    <div class="body-actions">
+                        <button class="btn-beautify" id="btn-beautify-json" title="Format JSON">
+                            ✨ Beautify JSON
+                        </button>
                     </div>
                     <textarea id="body-raw" placeholder="Enter raw body (JSON, XML, text, etc.)&#10;&#10;Example JSON:&#10;{&#10;  &quot;name&quot;: &quot;John Doe&quot;,&#10;  &quot;email&quot;: &quot;john@example.com&quot;&#10;}"></textarea>
                 </div>

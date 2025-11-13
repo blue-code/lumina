@@ -6,23 +6,34 @@ class LuminaApp {
     constructor() {
         this.requests = [];
         this.currentRequest = null;
+        this.folderTree = null;
+        this.currentFolder = null;
+        this.autoSaveTimer = null;
+        this.collapsedFolders = new Set();
         this.init();
     }
 
     async init() {
-        await this.loadRequests();
+        await this.loadFolderTree();
         this.setupEventListeners();
+        this.startAutoSave();
     }
 
     setupEventListeners() {
         // Send 버튼
         document.getElementById('btn-send').addEventListener('click', () => this.sendRequest());
 
+        // New Folder 버튼
+        document.getElementById('btn-new-folder').addEventListener('click', () => this.createNewFolder());
+
         // New Request 버튼
         document.getElementById('btn-new-request').addEventListener('click', () => this.createNewRequest());
 
         // Clear Response 버튼
         document.getElementById('btn-clear-response').addEventListener('click', () => this.clearResponse());
+
+        // Beautify JSON 버튼
+        document.getElementById('btn-beautify-json').addEventListener('click', () => this.beautifyJSON());
 
         // Import/Export 버튼
         document.getElementById('btn-import-md').addEventListener('click', () => this.showImportModal());
@@ -73,35 +84,112 @@ class LuminaApp {
         document.getElementById('select-method').addEventListener('change', () => this.saveCurrentRequest());
     }
 
-    async loadRequests() {
+    async loadFolderTree() {
         try {
-            const response = await fetch(`${API_BASE}/requests`);
-            this.requests = await response.json();
-            this.renderRequestList();
+            const response = await fetch(`${API_BASE}/folders/tree`);
+            const data = await response.json();
+            this.folderTree = data.tree;
+            this.renderFolderTree();
         } catch (error) {
-            console.error('Failed to load requests:', error);
+            console.error('Failed to load folder tree:', error);
         }
     }
 
-    renderRequestList() {
-        const listEl = document.getElementById('request-list');
-        listEl.innerHTML = '';
+    renderFolderTree() {
+        const treeEl = document.getElementById('folder-tree');
+        treeEl.innerHTML = '';
+        this.renderFolder(this.folderTree, treeEl, 0);
+    }
 
-        this.requests.forEach(req => {
-            const li = document.createElement('li');
-            li.className = 'request-item';
-            if (this.currentRequest && this.currentRequest.id === req.id) {
-                li.classList.add('active');
-            }
+    renderFolder(folder, parentEl, level) {
+        const folderDiv = document.createElement('div');
+        folderDiv.className = 'tree-folder';
 
-            li.innerHTML = `
-                <span class="request-method method-${req.method}">${req.method}</span>
-                <span class="request-name">${req.name}</span>
-            `;
+        // 폴더 헤더
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'tree-folder-header';
+        headerDiv.style.paddingLeft = `${level * 1}rem`;
 
-            li.addEventListener('click', () => this.selectRequest(req.id));
-            listEl.appendChild(li);
+        const isCollapsed = this.collapsedFolders.has(folder.id);
+
+        headerDiv.innerHTML = `
+            <span class="tree-folder-toggle">${isCollapsed ? '▶' : '▼'}</span>
+            <span class="tree-folder-icon">${isCollapsed ? '📁' : '📂'}</span>
+            <span class="tree-folder-name">${folder.name}</span>
+            ${level > 0 ? '<div class="tree-folder-actions"><button class="tree-btn" data-action="delete">🗑️</button></div>' : ''}
+        `;
+
+        // 토글 클릭
+        const toggle = headerDiv.querySelector('.tree-folder-toggle');
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleFolder(folder.id);
         });
+
+        // 폴더 클릭 (현재 폴더 설정)
+        headerDiv.addEventListener('click', () => {
+            this.currentFolder = folder;
+            document.querySelectorAll('.tree-folder-header').forEach(h => h.classList.remove('active'));
+            headerDiv.classList.add('active');
+        });
+
+        // 삭제 버튼
+        const deleteBtn = headerDiv.querySelector('[data-action="delete"]');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if (confirm(`Delete folder "${folder.name}"?`)) {
+                    await this.deleteFolder(folder.id);
+                }
+            });
+        }
+
+        folderDiv.appendChild(headerDiv);
+
+        // 폴더 내용
+        const contentDiv = document.createElement('div');
+        contentDiv.className = `tree-folder-content ${isCollapsed ? 'collapsed' : ''}`;
+
+        // 하위 폴더 렌더링
+        folder.folders.forEach(subFolder => {
+            this.renderFolder(subFolder, contentDiv, level + 1);
+        });
+
+        // 요청 렌더링
+        folder.requests.forEach(req => {
+            this.renderRequest(req, contentDiv, level + 1);
+        });
+
+        folderDiv.appendChild(contentDiv);
+        parentEl.appendChild(folderDiv);
+    }
+
+    renderRequest(request, parentEl, level) {
+        const reqDiv = document.createElement('div');
+        reqDiv.className = 'tree-request';
+        reqDiv.style.paddingLeft = `${level * 1}rem`;
+
+        if (this.currentRequest && this.currentRequest.id === request.id) {
+            reqDiv.classList.add('active');
+        }
+
+        reqDiv.innerHTML = `
+            <span class="request-method method-${request.method}">${request.method}</span>
+            <span class="request-name">${request.name}</span>
+        `;
+
+        reqDiv.addEventListener('click', () => this.selectRequest(request.id));
+
+        parentEl.appendChild(reqDiv);
+    }
+
+    toggleFolder(folderId) {
+        if (this.collapsedFolders.has(folderId)) {
+            this.collapsedFolders.delete(folderId);
+        } else {
+            this.collapsedFolders.add(folderId);
+        }
+        this.renderFolderTree();
     }
 
     async selectRequest(requestId) {
@@ -109,7 +197,7 @@ class LuminaApp {
             const response = await fetch(`${API_BASE}/requests/${requestId}`);
             this.currentRequest = await response.json();
             this.renderRequestEditor();
-            this.renderRequestList(); // 활성 상태 업데이트
+            this.renderFolderTree(); // 활성 상태 업데이트
             this.clearResponse();
         } catch (error) {
             console.error('Failed to load request:', error);
@@ -282,19 +370,81 @@ class LuminaApp {
         const name = prompt('Enter request name:');
         if (!name) return;
 
+        // 현재 폴더가 없으면 루트 폴더 사용
+        const targetFolder = this.currentFolder || this.folderTree;
+
         try {
-            const response = await fetch(`${API_BASE}/requests`, {
+            const response = await fetch(`${API_BASE}/folders/${targetFolder.id}/requests`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, url: '', method: 'GET' })
             });
 
-            const newRequest = await response.json();
-            await this.loadRequests();
-            await this.selectRequest(newRequest.id);
+            const data = await response.json();
+            await this.loadFolderTree();
+            await this.selectRequest(data.request.id);
         } catch (error) {
             console.error('Failed to create request:', error);
         }
+    }
+
+    async createNewFolder() {
+        const name = prompt('Enter folder name:');
+        if (!name) return;
+
+        // 현재 폴더가 없으면 루트에 추가
+        const parentId = this.currentFolder ? this.currentFolder.id : null;
+
+        try {
+            await fetch(`${API_BASE}/folders`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, parent_id: parentId })
+            });
+
+            await this.loadFolderTree();
+        } catch (error) {
+            console.error('Failed to create folder:', error);
+        }
+    }
+
+    async deleteFolder(folderId) {
+        try {
+            await fetch(`${API_BASE}/folders/${folderId}`, {
+                method: 'DELETE'
+            });
+
+            await this.loadFolderTree();
+        } catch (error) {
+            console.error('Failed to delete folder:', error);
+        }
+    }
+
+    beautifyJSON() {
+        const textarea = document.getElementById('body-raw');
+        const content = textarea.value.trim();
+
+        if (!content) {
+            alert('No content to beautify');
+            return;
+        }
+
+        try {
+            const parsed = JSON.parse(content);
+            textarea.value = JSON.stringify(parsed, null, 2);
+            this.saveCurrentRequest();
+        } catch (error) {
+            alert('Invalid JSON: ' + error.message);
+        }
+    }
+
+    startAutoSave() {
+        // 자동 저장 타이머 설정 (5초마다)
+        setInterval(() => {
+            if (this.currentRequest) {
+                this.saveCurrentRequest();
+            }
+        }, 5000);
     }
 
     async sendRequest() {

@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.project_manager import ProjectManager
 from core.http_client import HttpClient
-from models.request_model import RequestModel, HttpMethod, BodyType, AuthType
+from models.request_model import RequestModel, RequestFolder, HttpMethod, BodyType, AuthType
 from models.history_model import HistoryManager
 
 
@@ -365,6 +365,127 @@ class LuminaWebServer:
             history_mgr = self.get_session_history_manager()
             history_mgr.clear_history()
             return jsonify({'success': True})
+
+        # API: 폴더 트리 구조 조회
+        @self.app.route('/api/folders/tree', methods=['GET'])
+        def get_folder_tree():
+            pm = self.get_session_project_manager()
+            return jsonify({
+                'success': True,
+                'tree': pm.root_folder.to_dict()
+            })
+
+        # API: 새 폴더 생성
+        @self.app.route('/api/folders', methods=['POST'])
+        def create_folder():
+            pm = self.get_session_project_manager()
+            data = request.json
+            folder_name = data.get('name', 'New Folder')
+            parent_id = data.get('parent_id', None)
+
+            new_folder = RequestFolder(folder_name)
+
+            if parent_id:
+                # 부모 폴더 찾기
+                parent_folder = pm.find_folder_by_id(parent_id)
+                if not parent_folder:
+                    return jsonify({'error': 'Parent folder not found'}), 404
+                parent_folder.add_folder(new_folder)
+            else:
+                # 루트에 추가
+                pm.root_folder.add_folder(new_folder)
+
+            return jsonify({
+                'success': True,
+                'folder': new_folder.to_dict()
+            }), 201
+
+        # API: 폴더 이름 수정
+        @self.app.route('/api/folders/<folder_id>', methods=['PUT'])
+        def update_folder(folder_id):
+            pm = self.get_session_project_manager()
+            folder = pm.find_folder_by_id(folder_id)
+
+            if not folder:
+                return jsonify({'error': 'Folder not found'}), 404
+
+            data = request.json
+            if 'name' in data:
+                folder.name = data['name']
+
+            return jsonify({
+                'success': True,
+                'folder': folder.to_dict()
+            })
+
+        # API: 폴더 삭제
+        @self.app.route('/api/folders/<folder_id>', methods=['DELETE'])
+        def delete_folder(folder_id):
+            pm = self.get_session_project_manager()
+
+            # 루트 폴더는 삭제 불가
+            if folder_id == pm.root_folder.id:
+                return jsonify({'error': 'Cannot delete root folder'}), 400
+
+            if pm.remove_folder_recursive(folder_id):
+                return jsonify({'success': True})
+
+            return jsonify({'error': 'Folder not found'}), 404
+
+        # API: 폴더에 새 요청 추가
+        @self.app.route('/api/folders/<folder_id>/requests', methods=['POST'])
+        def create_request_in_folder(folder_id):
+            pm = self.get_session_project_manager()
+            folder = pm.find_folder_by_id(folder_id)
+
+            if not folder:
+                return jsonify({'error': 'Folder not found'}), 404
+
+            data = request.json
+            new_request = RequestModel(data.get('name', 'New Request'))
+            if 'url' in data:
+                new_request.url = data['url']
+            if 'method' in data:
+                new_request.method = HttpMethod(data['method'])
+
+            folder.add_request(new_request)
+
+            return jsonify({
+                'success': True,
+                'request': new_request.to_dict()
+            }), 201
+
+        # API: 요청을 다른 폴더로 이동
+        @self.app.route('/api/requests/<request_id>/move', methods=['PUT'])
+        def move_request(request_id):
+            pm = self.get_session_project_manager()
+            data = request.json
+            target_folder_id = data.get('folder_id')
+
+            if not target_folder_id:
+                return jsonify({'error': 'Target folder_id required'}), 400
+
+            # 타겟 폴더 찾기
+            target_folder = pm.find_folder_by_id(target_folder_id)
+            if not target_folder:
+                return jsonify({'error': 'Target folder not found'}), 404
+
+            # 요청 찾기 및 제거
+            req = pm.find_request_by_id(request_id)
+            if not req:
+                return jsonify({'error': 'Request not found'}), 404
+
+            # 현재 폴더에서 제거
+            if not pm.remove_request_recursive(request_id):
+                return jsonify({'error': 'Failed to remove request from current folder'}), 500
+
+            # 타겟 폴더에 추가
+            target_folder.add_request(req)
+
+            return jsonify({
+                'success': True,
+                'request': req.to_dict()
+            })
 
     def start(self):
         """서버 시작 (별도 스레드에서)"""
