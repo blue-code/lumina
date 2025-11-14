@@ -35,6 +35,14 @@ class LuminaApp {
         // Beautify JSON 버튼
         document.getElementById('btn-beautify-json').addEventListener('click', () => this.beautifyJSON());
 
+        // Toggle Preview 버튼
+        document.getElementById('btn-toggle-preview').addEventListener('click', () => this.toggleDocsPreview());
+
+        // Docs 변경 감지
+        document.getElementById('docs-markdown').addEventListener('input', () => {
+            this.saveCurrentRequest();
+        });
+
         // Import/Export 버튼
         document.getElementById('btn-import-md').addEventListener('click', () => this.showImportModal());
         document.getElementById('btn-export-md').addEventListener('click', () => this.showExportModal());
@@ -109,6 +117,9 @@ class LuminaApp {
         const headerDiv = document.createElement('div');
         headerDiv.className = 'tree-folder-header';
         headerDiv.style.paddingLeft = `${level * 1}rem`;
+        headerDiv.draggable = level > 0; // 루트 폴더는 드래그 불가
+        headerDiv.dataset.folderId = folder.id;
+        headerDiv.dataset.type = 'folder';
 
         const isCollapsed = this.collapsedFolders.has(folder.id);
 
@@ -118,6 +129,53 @@ class LuminaApp {
             <span class="tree-folder-name">${folder.name}</span>
             ${level > 0 ? '<div class="tree-folder-actions"><button class="tree-btn" data-action="delete">🗑️</button></div>' : ''}
         `;
+
+        // 드래그 이벤트
+        if (level > 0) {
+            headerDiv.addEventListener('dragstart', (e) => {
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('folderId', folder.id);
+                e.dataTransfer.setData('type', 'folder');
+                headerDiv.classList.add('dragging');
+            });
+
+            headerDiv.addEventListener('dragend', (e) => {
+                headerDiv.classList.remove('dragging');
+            });
+        }
+
+        // 드롭 영역으로 설정
+        headerDiv.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            headerDiv.classList.add('drag-over');
+        });
+
+        headerDiv.addEventListener('dragleave', (e) => {
+            headerDiv.classList.remove('drag-over');
+        });
+
+        headerDiv.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            headerDiv.classList.remove('drag-over');
+
+            const draggedType = e.dataTransfer.getData('type');
+            const draggedId = e.dataTransfer.getData(draggedType === 'folder' ? 'folderId' : 'requestId');
+
+            if (!draggedId) return;
+
+            // 자기 자신으로 드롭은 무시
+            if (draggedType === 'folder' && draggedId === folder.id) return;
+
+            if (draggedType === 'request') {
+                // 요청을 폴더로 이동
+                await this.moveRequest(draggedId, folder.id);
+            } else if (draggedType === 'folder') {
+                // 폴더를 폴더로 이동 (하위 폴더로)
+                await this.moveFolder(draggedId, folder.id);
+            }
+        });
 
         // 토글 클릭
         const toggle = headerDiv.querySelector('.tree-folder-toggle');
@@ -168,6 +226,9 @@ class LuminaApp {
         const reqDiv = document.createElement('div');
         reqDiv.className = 'tree-request';
         reqDiv.style.paddingLeft = `${level * 1}rem`;
+        reqDiv.draggable = true;
+        reqDiv.dataset.requestId = request.id;
+        reqDiv.dataset.type = 'request';
 
         if (this.currentRequest && this.currentRequest.id === request.id) {
             reqDiv.classList.add('active');
@@ -177,6 +238,18 @@ class LuminaApp {
             <span class="request-method method-${request.method}">${request.method}</span>
             <span class="request-name">${request.name}</span>
         `;
+
+        // 드래그 이벤트
+        reqDiv.addEventListener('dragstart', (e) => {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('requestId', request.id);
+            e.dataTransfer.setData('type', 'request');
+            reqDiv.classList.add('dragging');
+        });
+
+        reqDiv.addEventListener('dragend', (e) => {
+            reqDiv.classList.remove('dragging');
+        });
 
         reqDiv.addEventListener('click', () => this.selectRequest(request.id));
 
@@ -222,6 +295,9 @@ class LuminaApp {
 
         // Auth
         this.renderAuth();
+
+        // Documentation
+        document.getElementById('docs-markdown').value = this.currentRequest.documentation || '';
 
         // Load history
         this.loadHistory();
@@ -352,6 +428,7 @@ class LuminaApp {
             params: this.getKeyValueData('params'),
             body_raw: document.getElementById('body-raw').value,
             body_type: 'raw',
+            documentation: document.getElementById('docs-markdown').value,
             ...authData
         };
 
@@ -420,6 +497,36 @@ class LuminaApp {
         }
     }
 
+    async moveRequest(requestId, targetFolderId) {
+        try {
+            await fetch(`${API_BASE}/requests/${requestId}/move`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ folder_id: targetFolderId })
+            });
+
+            await this.loadFolderTree();
+        } catch (error) {
+            console.error('Failed to move request:', error);
+            alert('Failed to move request');
+        }
+    }
+
+    async moveFolder(folderId, targetFolderId) {
+        try {
+            await fetch(`${API_BASE}/folders/${folderId}/move`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ parent_id: targetFolderId })
+            });
+
+            await this.loadFolderTree();
+        } catch (error) {
+            console.error('Failed to move folder:', error);
+            alert('Failed to move folder');
+        }
+    }
+
     beautifyJSON() {
         const textarea = document.getElementById('body-raw');
         const content = textarea.value.trim();
@@ -445,6 +552,80 @@ class LuminaApp {
                 this.saveCurrentRequest();
             }
         }, 5000);
+    }
+
+    toggleDocsPreview() {
+        const textarea = document.getElementById('docs-markdown');
+        const preview = document.getElementById('docs-preview');
+
+        if (preview.classList.contains('hidden')) {
+            // 프리뷰 표시
+            const markdown = textarea.value;
+            preview.innerHTML = this.renderMarkdown(markdown);
+            preview.classList.remove('hidden');
+            textarea.style.display = 'none';
+        } else {
+            // 편집 모드
+            preview.classList.add('hidden');
+            textarea.style.display = 'block';
+        }
+    }
+
+    renderMarkdown(markdown) {
+        if (!markdown) return '<p>No documentation yet.</p>';
+
+        // 간단한 마크다운 렌더러
+        let html = markdown;
+
+        // 코드 블록 (```)
+        html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+            return `<pre><code>${this.escapeHtml(code.trim())}</code></pre>`;
+        });
+
+        // 인라인 코드 (`)
+        html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+        // 헤더
+        html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+        html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+        html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+        // 볼드
+        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+        // 이탤릭
+        html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+        // 링크
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+
+        // 리스트
+        html = html.replace(/^\- (.*$)/gim, '<li>$1</li>');
+        html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+
+        // 번호 리스트
+        html = html.replace(/^\d+\. (.*$)/gim, '<li>$1</li>');
+
+        // 줄바꿈
+        html = html.split('\n\n').map(para => {
+            if (para.startsWith('<h') || para.startsWith('<ul') || para.startsWith('<pre') || para.startsWith('<li>')) {
+                return para;
+            }
+            return `<p>${para}</p>`;
+        }).join('');
+
+        return html;
+    }
+
+    escapeHtml(text) {
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, m => map[m]);
     }
 
     async sendRequest() {

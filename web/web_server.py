@@ -197,6 +197,8 @@ class LuminaWebServer:
                 req.auth_api_key_value = data['auth_api_key_value']
             if 'auth_api_key_location' in data:
                 req.auth_api_key_location = data['auth_api_key_location']
+            if 'documentation' in data:
+                req.documentation = data['documentation']
 
             return jsonify(req.to_dict())
 
@@ -485,6 +487,42 @@ class LuminaWebServer:
             return jsonify({
                 'success': True,
                 'request': req.to_dict()
+            })
+
+        # API: 폴더를 다른 폴더로 이동
+        @self.app.route('/api/folders/<folder_id>/move', methods=['PUT'])
+        def move_folder(folder_id):
+            pm = self.get_session_project_manager()
+            data = request.json
+            parent_id = data.get('parent_id')
+
+            if not parent_id:
+                return jsonify({'error': 'Parent folder_id required'}), 400
+
+            # 이동할 폴더 찾기
+            folder = pm.find_folder_by_id(folder_id)
+            if not folder:
+                return jsonify({'error': 'Folder not found'}), 404
+
+            # 타겟 부모 폴더 찾기
+            parent_folder = pm.find_folder_by_id(parent_id)
+            if not parent_folder:
+                return jsonify({'error': 'Parent folder not found'}), 404
+
+            # 자기 자신의 하위로 이동 방지 (순환 참조)
+            if pm.is_descendant(parent_id, folder_id):
+                return jsonify({'error': 'Cannot move folder into its own descendant'}), 400
+
+            # 현재 위치에서 제거
+            if not pm.remove_folder_recursive(folder_id):
+                return jsonify({'error': 'Failed to remove folder from current location'}), 500
+
+            # 새 위치에 추가
+            parent_folder.add_folder(folder)
+
+            return jsonify({
+                'success': True,
+                'folder': folder.to_dict()
             })
 
     def start(self):

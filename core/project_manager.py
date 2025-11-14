@@ -192,6 +192,34 @@ class ProjectManager:
 
             return False
 
+    def is_descendant(self, potential_descendant_id: str, ancestor_id: str, folder: Optional[RequestFolder] = None) -> bool:
+        """
+        한 폴더가 다른 폴더의 하위인지 확인 (순환 참조 방지용)
+
+        Args:
+            potential_descendant_id: 하위일 가능성이 있는 폴더 ID
+            ancestor_id: 상위 폴더 ID
+            folder: 검색을 시작할 폴더 (None이면 ancestor부터)
+
+        Returns:
+            True if potential_descendant is a descendant of ancestor
+        """
+        with self._lock:
+            if folder is None:
+                folder = self.find_folder_by_id(ancestor_id)
+                if not folder:
+                    return False
+
+            # 직접 자식 폴더 검색
+            for sub_folder in folder.folders:
+                if sub_folder.id == potential_descendant_id:
+                    return True
+                # 재귀적으로 하위 폴더 검색
+                if self.is_descendant(potential_descendant_id, ancestor_id, sub_folder):
+                    return True
+
+            return False
+
     def create_sample_project(self):
         """샘플 프로젝트 생성 (테스트용)"""
         with self._lock:

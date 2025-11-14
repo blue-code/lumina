@@ -121,6 +121,9 @@
                     <button class="tab" data-tab="auth" title="Configure authentication">
                         <span class="tab-icon">🔐</span> Auth
                     </button>
+                    <button class="tab" data-tab="docs" title="API Documentation (Markdown)">
+                        <span class="tab-icon">📖</span> Docs
+                    </button>
                     <button class="tab" data-tab="history-input" title="View request history">
                         <span class="tab-icon">⏱️</span> History
                     </button>
@@ -238,6 +241,17 @@
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <div class="tab-content" id="tab-docs">
+                    <div class="tab-help">
+                        📖 <strong>API Documentation:</strong> Write API specifications in Markdown format
+                    </div>
+                    <div class="docs-preview-toggle">
+                        <button class="btn-toggle-preview" id="btn-toggle-preview">👁️ Toggle Preview</button>
+                    </div>
+                    <textarea id="docs-markdown" placeholder="# API Documentation&#10;&#10;## Description&#10;Brief description of this API endpoint.&#10;&#10;## Parameters&#10;- `param1`: Description&#10;- `param2`: Description&#10;&#10;## Example Response&#10;```json&#10;{&#10;  &quot;status&quot;: &quot;success&quot;&#10;}&#10;```"></textarea>
+                    <div id="docs-preview" class="docs-preview hidden"></div>
                 </div>
 
                 <div class="tab-content" id="tab-history-input">

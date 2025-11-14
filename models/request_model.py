@@ -62,6 +62,9 @@ class RequestModel:
         self.auth_api_key_value = ""
         self.auth_api_key_location = "header"  # "header" or "query"
 
+        # API 문서 (마크다운)
+        self.documentation = ""
+
     def to_dict(self) -> Dict[str, Any]:
         """딕셔너리로 변환 (JSON 저장용)"""
         return {
@@ -81,6 +84,7 @@ class RequestModel:
             "auth_api_key_name": self.auth_api_key_name,
             "auth_api_key_value": self.auth_api_key_value,
             "auth_api_key_location": self.auth_api_key_location,
+            "documentation": self.documentation,
         }
 
     @classmethod
@@ -102,6 +106,7 @@ class RequestModel:
         request.auth_api_key_name = data.get("auth_api_key_name", "")
         request.auth_api_key_value = data.get("auth_api_key_value", "")
         request.auth_api_key_location = data.get("auth_api_key_location", "header")
+        request.documentation = data.get("documentation", "")
         return request
 
     def clone(self) -> 'RequestModel':
