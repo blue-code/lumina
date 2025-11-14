@@ -37,11 +37,16 @@ class LuminaWebServer:
         self.app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
         # 세션별 프로젝트 매니저 저장소 (thread-safe)
-        self.sessions: Dict[str, ProjectManager] = {}
+        # 구조: {session_id: {project_id: ProjectManager}}
+        self.sessions: Dict[str, Dict[str, ProjectManager]] = {}
         self.sessions_lock = threading.RLock()
 
+        # 세션별 활성 프로젝트 ID
+        self.active_projects: Dict[str, str] = {}
+
         # 세션별 히스토리 매니저 저장소
-        self.histories: Dict[str, HistoryManager] = {}
+        # 구조: {session_id: {project_id: HistoryManager}}
+        self.histories: Dict[str, Dict[str, HistoryManager]] = {}
 
         # 레거시 지원: 데스크톱 앱과의 공유를 위한 기본 프로젝트 (옵션)
         self.project_manager = None  # Will be set by desktop app if needed
@@ -56,7 +61,7 @@ class LuminaWebServer:
         self.setup_routes()
 
     def get_session_project_manager(self) -> ProjectManager:
-        """현재 세션의 프로젝트 매니저 가져오기 (없으면 생성)"""
+        """현재 세션의 활성 프로젝트 매니저 가져오기 (없으면 생성)"""
         # 데스크톱 앱에서 공유 모드일 경우
         if self.project_manager is not None:
             return self.project_manager
@@ -68,13 +73,22 @@ class LuminaWebServer:
         session_id = session['session_id']
 
         with self.sessions_lock:
+            # 세션 초기화
             if session_id not in self.sessions:
-                # 새 프로젝트 매니저 생성
-                pm = ProjectManager()
-                pm.create_sample_project()
-                self.sessions[session_id] = pm
+                self.sessions[session_id] = {}
 
-            return self.sessions[session_id]
+            # 활성 프로젝트 ID 가져오기
+            if session_id not in self.active_projects or self.active_projects[session_id] not in self.sessions[session_id]:
+                # 기본 프로젝트 생성
+                default_project_id = str(uuid.uuid4())
+                pm = ProjectManager()
+                pm.project_name = "Default Project"
+                pm.create_sample_project()
+                self.sessions[session_id][default_project_id] = pm
+                self.active_projects[session_id] = default_project_id
+
+            active_project_id = self.active_projects[session_id]
+            return self.sessions[session_id][active_project_id]
 
     def get_session_http_client(self) -> HttpClient:
         """현재 세션의 HTTP 클라이언트 가져오기"""
@@ -87,7 +101,7 @@ class LuminaWebServer:
         return HttpClient(pm.env_manager)
 
     def get_session_history_manager(self) -> HistoryManager:
-        """현재 세션의 히스토리 매니저 가져오기"""
+        """현재 세션의 활성 프로젝트 히스토리 매니저 가져오기"""
         # 데스크톱 앱에서 공유 모드일 경우
         if self.history_manager is not None:
             return self.history_manager
@@ -99,10 +113,21 @@ class LuminaWebServer:
         session_id = session['session_id']
 
         with self.sessions_lock:
+            # 세션 초기화
             if session_id not in self.histories:
-                self.histories[session_id] = HistoryManager()
+                self.histories[session_id] = {}
 
-            return self.histories[session_id]
+            # 활성 프로젝트 ID 가져오기 (없으면 기본 프로젝트 생성됨)
+            if session_id not in self.active_projects:
+                self.get_session_project_manager()
+
+            active_project_id = self.active_projects[session_id]
+
+            # 프로젝트별 히스토리 매니저 생성
+            if active_project_id not in self.histories[session_id]:
+                self.histories[session_id][active_project_id] = HistoryManager()
+
+            return self.histories[session_id][active_project_id]
 
     def setup_routes(self):
         """라우트 설정"""
@@ -289,9 +314,22 @@ class LuminaWebServer:
                 if 'session_id' not in session:
                     session['session_id'] = str(uuid.uuid4())
                 session_id = session['session_id']
+
                 with self.sessions_lock:
-                    self.sessions[session_id] = pm
-                return jsonify({'success': True})
+                    # 새 프로젝트로 추가
+                    project_id = str(uuid.uuid4())
+                    if session_id not in self.sessions:
+                        self.sessions[session_id] = {}
+                    self.sessions[session_id][project_id] = pm
+                    self.active_projects[session_id] = project_id
+
+                return jsonify({
+                    'success': True,
+                    'project': {
+                        'id': project_id,
+                        'name': pm.project_name
+                    }
+                })
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
 
@@ -367,6 +405,173 @@ class LuminaWebServer:
             history_mgr = self.get_session_history_manager()
             history_mgr.clear_history()
             return jsonify({'success': True})
+
+        # ======================
+        # 프로젝트 관리 API
+        # ======================
+
+        # API: 모든 프로젝트 목록 조회
+        @self.app.route('/api/projects', methods=['GET'])
+        def get_projects():
+            if 'session_id' not in session:
+                session['session_id'] = str(uuid.uuid4())
+
+            session_id = session['session_id']
+
+            with self.sessions_lock:
+                if session_id not in self.sessions:
+                    self.sessions[session_id] = {}
+
+                projects = []
+                for project_id, pm in self.sessions[session_id].items():
+                    projects.append({
+                        'id': project_id,
+                        'name': pm.project_name,
+                        'is_active': self.active_projects.get(session_id) == project_id
+                    })
+
+                return jsonify({
+                    'success': True,
+                    'projects': projects
+                })
+
+        # API: 활성 프로젝트 조회
+        @self.app.route('/api/projects/active', methods=['GET'])
+        def get_active_project():
+            if 'session_id' not in session:
+                session['session_id'] = str(uuid.uuid4())
+
+            session_id = session['session_id']
+
+            with self.sessions_lock:
+                if session_id in self.active_projects:
+                    active_id = self.active_projects[session_id]
+                    if active_id in self.sessions.get(session_id, {}):
+                        pm = self.sessions[session_id][active_id]
+                        return jsonify({
+                            'success': True,
+                            'project': {
+                                'id': active_id,
+                                'name': pm.project_name
+                            }
+                        })
+
+                return jsonify({
+                    'success': True,
+                    'project': None
+                })
+
+        # API: 새 프로젝트 생성
+        @self.app.route('/api/projects', methods=['POST'])
+        def create_project():
+            data = request.json
+            project_name = data.get('name', 'New Project')
+
+            if 'session_id' not in session:
+                session['session_id'] = str(uuid.uuid4())
+
+            session_id = session['session_id']
+
+            with self.sessions_lock:
+                if session_id not in self.sessions:
+                    self.sessions[session_id] = {}
+
+                # 새 프로젝트 생성
+                project_id = str(uuid.uuid4())
+                pm = ProjectManager()
+                pm.project_name = project_name
+                self.sessions[session_id][project_id] = pm
+
+                return jsonify({
+                    'success': True,
+                    'project': {
+                        'id': project_id,
+                        'name': pm.project_name
+                    }
+                }), 201
+
+        # API: 프로젝트 이름 변경
+        @self.app.route('/api/projects/<project_id>', methods=['PUT'])
+        def update_project(project_id):
+            data = request.json
+            new_name = data.get('name')
+
+            if not new_name:
+                return jsonify({'error': 'Project name required'}), 400
+
+            if 'session_id' not in session:
+                return jsonify({'error': 'Session not found'}), 404
+
+            session_id = session['session_id']
+
+            with self.sessions_lock:
+                if session_id not in self.sessions or project_id not in self.sessions[session_id]:
+                    return jsonify({'error': 'Project not found'}), 404
+
+                pm = self.sessions[session_id][project_id]
+                pm.project_name = new_name
+
+                return jsonify({
+                    'success': True,
+                    'project': {
+                        'id': project_id,
+                        'name': pm.project_name
+                    }
+                })
+
+        # API: 프로젝트 삭제
+        @self.app.route('/api/projects/<project_id>', methods=['DELETE'])
+        def delete_project(project_id):
+            if 'session_id' not in session:
+                return jsonify({'error': 'Session not found'}), 404
+
+            session_id = session['session_id']
+
+            with self.sessions_lock:
+                if session_id not in self.sessions or project_id not in self.sessions[session_id]:
+                    return jsonify({'error': 'Project not found'}), 404
+
+                # 프로젝트 삭제
+                del self.sessions[session_id][project_id]
+
+                # 히스토리도 삭제
+                if session_id in self.histories and project_id in self.histories[session_id]:
+                    del self.histories[session_id][project_id]
+
+                # 활성 프로젝트였다면 다른 프로젝트로 전환 또는 None으로
+                if self.active_projects.get(session_id) == project_id:
+                    if self.sessions[session_id]:
+                        # 다른 프로젝트가 있으면 첫 번째 것으로 전환
+                        self.active_projects[session_id] = list(self.sessions[session_id].keys())[0]
+                    else:
+                        # 프로젝트가 없으면 제거
+                        del self.active_projects[session_id]
+
+                return jsonify({'success': True})
+
+        # API: 활성 프로젝트 전환
+        @self.app.route('/api/projects/<project_id>/activate', methods=['PUT'])
+        def activate_project(project_id):
+            if 'session_id' not in session:
+                return jsonify({'error': 'Session not found'}), 404
+
+            session_id = session['session_id']
+
+            with self.sessions_lock:
+                if session_id not in self.sessions or project_id not in self.sessions[session_id]:
+                    return jsonify({'error': 'Project not found'}), 404
+
+                # 활성 프로젝트 전환
+                self.active_projects[session_id] = project_id
+                pm = self.sessions[session_id][project_id]
+
+                return jsonify({
+                    'success': True,
+                    'project': {
+                        'id': project_id,
+                        'name': pm.project_name
+                    }
+                })
 
         # API: 폴더 트리 구조 조회
         @self.app.route('/api/folders/tree', methods=['GET'])

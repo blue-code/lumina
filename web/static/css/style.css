@@ -66,6 +66,158 @@ body {
     color: #667eea;
 }
 
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.project-selector {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.project-selector label {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.project-dropdown {
+    padding: 0.5rem 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    min-width: 150px;
+    transition: all 0.2s;
+}
+
+.project-dropdown:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.project-dropdown option {
+    color: var(--text-color);
+    background: white;
+}
+
+.btn-new-project,
+.btn-manage-projects {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.btn-new-project:hover,
+.btn-manage-projects:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-1px);
+}
+
+/* Projects List (in manage modal) */
+.projects-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.project-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background: #f9f9f9;
+    border-left: 3px solid var(--primary-color);
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.project-item:hover {
+    background: #f0f0f0;
+}
+
+.project-item.active {
+    background: #e3f2fd;
+    border-left-color: #2196F3;
+    border-left-width: 4px;
+}
+
+.project-item-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.project-item-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.project-item-name input {
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border: 2px solid var(--primary-color);
+    border-radius: 3px;
+}
+
+.project-item-badge {
+    display: inline-block;
+    background: var(--success-color);
+    color: white;
+    padding: 0.125rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.project-item-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-activate-project {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: background 0.2s;
+}
+
+.btn-activate-project:hover {
+    background: var(--primary-hover);
+}
+
+.btn-delete-project {
+    background: #f44336;
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: background 0.2s;
+}
+
+.btn-delete-project:hover {
+    background: #d32f2f;
+}
+
 /* Main Container */
 .container {
     display: flex;

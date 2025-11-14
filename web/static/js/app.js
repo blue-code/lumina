@@ -10,10 +10,13 @@ class LuminaApp {
         this.currentFolder = null;
         this.autoSaveTimer = null;
         this.collapsedFolders = new Set();
+        this.currentProject = null;
+        this.projects = [];
         this.init();
     }
 
     async init() {
+        await this.loadProjects();
         await this.loadFolderTree();
         this.setupEventListeners();
         this.startAutoSave();
@@ -56,6 +59,20 @@ class LuminaApp {
         document.getElementById('btn-close-export').addEventListener('click', () => this.hideExportModal());
         document.getElementById('btn-close-export2').addEventListener('click', () => this.hideExportModal());
         document.getElementById('btn-copy-export').addEventListener('click', () => this.copyExportToClipboard());
+
+        // Project Management
+        document.getElementById('project-dropdown').addEventListener('change', (e) => this.onProjectChange(e.target.value));
+        document.getElementById('btn-new-project').addEventListener('click', () => this.showNewProjectModal());
+        document.getElementById('btn-manage-projects').addEventListener('click', () => this.showManageProjectsModal());
+
+        // New Project Modal
+        document.getElementById('btn-close-new-project').addEventListener('click', () => this.hideNewProjectModal());
+        document.getElementById('btn-cancel-new-project').addEventListener('click', () => this.hideNewProjectModal());
+        document.getElementById('btn-confirm-new-project').addEventListener('click', () => this.createNewProject());
+
+        // Manage Projects Modal
+        document.getElementById('btn-close-manage-projects').addEventListener('click', () => this.hideManageProjectsModal());
+        document.getElementById('btn-close-manage-projects2').addEventListener('click', () => this.hideManageProjectsModal());
 
         // Tabs
         document.querySelectorAll('.tab').forEach(tab => {
@@ -963,6 +980,258 @@ class LuminaApp {
             document.execCommand('copy');
             alert('Markdown copied to clipboard!');
         }
+    }
+
+    // ==================
+    // 프로젝트 관리
+    // ==================
+
+    async loadProjects() {
+        try {
+            const response = await fetch(`${API_BASE}/projects`);
+            const result = await response.json();
+
+            if (result.success) {
+                this.projects = result.projects;
+                this.renderProjectsDropdown();
+
+                // 활성 프로젝트 찾기
+                const activeProject = this.projects.find(p => p.is_active);
+                if (activeProject) {
+                    this.currentProject = activeProject;
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load projects:', error);
+        }
+    }
+
+    renderProjectsDropdown() {
+        const dropdown = document.getElementById('project-dropdown');
+        dropdown.innerHTML = '';
+
+        if (this.projects.length === 0) {
+            dropdown.innerHTML = '<option value="">No projects</option>';
+            return;
+        }
+
+        this.projects.forEach(project => {
+            const option = document.createElement('option');
+            option.value = project.id;
+            option.textContent = project.name;
+            option.selected = project.is_active;
+            dropdown.appendChild(option);
+        });
+    }
+
+    async onProjectChange(projectId) {
+        if (!projectId) return;
+
+        try {
+            const response = await fetch(`${API_BASE}/projects/${projectId}/activate`, {
+                method: 'PUT'
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.currentProject = result.project;
+
+                // 폴더 트리 새로고침
+                await this.loadFolderTree();
+
+                // 현재 요청 초기화
+                this.currentRequest = null;
+                this.clearResponse();
+            }
+        } catch (error) {
+            console.error('Failed to activate project:', error);
+            alert('Failed to switch project');
+        }
+    }
+
+    showNewProjectModal() {
+        document.getElementById('new-project-modal').classList.add('active');
+        document.getElementById('new-project-name').value = '';
+        document.getElementById('new-project-name').focus();
+    }
+
+    hideNewProjectModal() {
+        document.getElementById('new-project-modal').classList.remove('active');
+    }
+
+    async createNewProject() {
+        const name = document.getElementById('new-project-name').value.trim();
+
+        if (!name) {
+            alert('Please enter a project name');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/projects`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.hideNewProjectModal();
+                await this.loadProjects();
+
+                // 새 프로젝트 활성화
+                await this.onProjectChange(result.project.id);
+            } else {
+                alert(`Failed to create project: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Failed to create project:', error);
+            alert('Failed to create project');
+        }
+    }
+
+    async showManageProjectsModal() {
+        await this.loadProjects();
+        this.renderProjectsList();
+        document.getElementById('manage-projects-modal').classList.add('active');
+    }
+
+    hideManageProjectsModal() {
+        document.getElementById('manage-projects-modal').classList.remove('active');
+    }
+
+    renderProjectsList() {
+        const list = document.getElementById('projects-list');
+        list.innerHTML = '';
+
+        if (this.projects.length === 0) {
+            list.innerHTML = '<p class="history-empty">No projects yet. Create one!</p>';
+            return;
+        }
+
+        this.projects.forEach(project => {
+            const item = document.createElement('div');
+            item.className = `project-item ${project.is_active ? 'active' : ''}`;
+
+            item.innerHTML = `
+                <div class="project-item-info">
+                    <div class="project-item-name" data-project-id="${project.id}">
+                        ${project.name}
+                        ${project.is_active ? '<span class="project-item-badge">Active</span>' : ''}
+                    </div>
+                </div>
+                <div class="project-item-actions">
+                    ${!project.is_active ? `<button class="btn-activate-project" data-project-id="${project.id}">Activate</button>` : ''}
+                    <button class="btn-delete-project" data-project-id="${project.id}">Delete</button>
+                </div>
+            `;
+
+            // 더블클릭으로 이름 변경
+            const nameEl = item.querySelector('.project-item-name');
+            nameEl.addEventListener('dblclick', () => {
+                this.renameProjectInline(project.id, nameEl);
+            });
+
+            // 활성화 버튼
+            const activateBtn = item.querySelector('.btn-activate-project');
+            if (activateBtn) {
+                activateBtn.addEventListener('click', async () => {
+                    await this.activateProject(project.id);
+                });
+            }
+
+            // 삭제 버튼
+            const deleteBtn = item.querySelector('.btn-delete-project');
+            deleteBtn.addEventListener('click', async () => {
+                if (confirm(`Delete project "${project.name}"?`)) {
+                    await this.deleteProject(project.id);
+                }
+            });
+
+            list.appendChild(item);
+        });
+    }
+
+    async activateProject(projectId) {
+        await this.onProjectChange(projectId);
+        await this.loadProjects();
+        this.renderProjectsList();
+    }
+
+    async deleteProject(projectId) {
+        try {
+            const response = await fetch(`${API_BASE}/projects/${projectId}`, {
+                method: 'DELETE'
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                await this.loadProjects();
+                this.renderProjectsList();
+
+                // 현재 프로젝트가 삭제된 경우 폴더 트리 새로고침
+                await this.loadFolderTree();
+            } else {
+                alert(`Failed to delete project: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Failed to delete project:', error);
+            alert('Failed to delete project');
+        }
+    }
+
+    renameProjectInline(projectId, nameEl) {
+        const currentName = nameEl.textContent.trim().replace('Active', '').trim();
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = currentName;
+
+        nameEl.innerHTML = '';
+        nameEl.appendChild(input);
+        input.focus();
+        input.select();
+
+        const finishRename = async () => {
+            const newName = input.value.trim();
+
+            if (newName && newName !== currentName) {
+                try {
+                    const response = await fetch(`${API_BASE}/projects/${projectId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: newName })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        await this.loadProjects();
+                        this.renderProjectsList();
+                    } else {
+                        alert(`Failed to rename project: ${result.error}`);
+                        this.renderProjectsList();
+                    }
+                } catch (error) {
+                    console.error('Failed to rename project:', error);
+                    alert('Failed to rename project');
+                    this.renderProjectsList();
+                }
+            } else {
+                this.renderProjectsList();
+            }
+        };
+
+        input.addEventListener('blur', finishRename);
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                finishRename();
+            } else if (e.key === 'Escape') {
+                this.renderProjectsList();
+            }
+        });
     }
 }
 

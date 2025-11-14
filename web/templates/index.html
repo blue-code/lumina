@@ -14,7 +14,17 @@
                 <h1>✨ Lumina</h1>
                 <p>Elegant REST API Client - Web Interface</p>
             </div>
-            <a href="/docs" class="header-link" target="_blank">📚 API Docs</a>
+            <div class="header-actions">
+                <div class="project-selector">
+                    <label for="project-dropdown">📁 Project:</label>
+                    <select id="project-dropdown" class="project-dropdown">
+                        <option value="">Loading...</option>
+                    </select>
+                    <button class="btn-new-project" id="btn-new-project" title="Create new project">➕</button>
+                    <button class="btn-manage-projects" id="btn-manage-projects" title="Manage projects">⚙️</button>
+                </div>
+                <a href="/docs" class="header-link" target="_blank">📚 API Docs</a>
+            </div>
         </div>
     </div>
 
@@ -85,6 +95,47 @@
                 <div class="modal-footer">
                     <button class="btn-primary" id="btn-copy-export">📋 Copy to Clipboard</button>
                     <button class="btn-cancel" id="btn-close-export2">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Project Modal -->
+        <div class="modal" id="new-project-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>➕ Create New Project</h3>
+                    <button class="modal-close" id="btn-close-new-project">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="new-project-name">Project Name:</label>
+                        <input type="text" id="new-project-name" placeholder="Enter project name..." class="input-url">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-cancel" id="btn-cancel-new-project">Cancel</button>
+                    <button class="btn-primary" id="btn-confirm-new-project">Create</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manage Projects Modal -->
+        <div class="modal" id="manage-projects-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>⚙️ Manage Projects</h3>
+                    <button class="modal-close" id="btn-close-manage-projects">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="tab-help" style="margin-bottom: 1rem;">
+                        💡 Manage your projects. Double-click a project name to rename it.
+                    </div>
+                    <div class="projects-list" id="projects-list">
+                        <!-- Projects will be loaded here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-cancel" id="btn-close-manage-projects2">Close</button>
                 </div>
             </div>
         </div>
