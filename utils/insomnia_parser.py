@@ -98,7 +98,36 @@ class InsomniaParser:
                 # 루트에 추가
                 pm.root_folder.add_request(request_model)
 
+        # 5단계: 환경 변수 처리
+        InsomniaParser._import_environments(resources, pm, workspace['_id'] if workspace else None)
+
         return pm
+
+    @staticmethod
+    def _import_environments(resources: List[Dict[str, Any]], pm: ProjectManager, workspace_id: str):
+        """Insomnia environment를 ProjectManager로 import"""
+        from models.environment import Environment
+
+        for resource in resources:
+            if resource.get('_type') == 'environment':
+                env_name = resource.get('name', 'Imported Environment')
+                env_data = resource.get('data', {})
+
+                # Base Environment는 Global로 처리
+                if env_name == 'Base Environment' or resource.get('parentId') == workspace_id:
+                    # Global environment에 변수 추가
+                    for key, value in env_data.items():
+                        pm.env_manager.global_environment.set(key, str(value))
+                else:
+                    # Sub Environment는 새로운 환경으로 추가
+                    env = Environment(env_name)
+                    for key, value in env_data.items():
+                        env.set(key, str(value))
+                    pm.env_manager.add_environment(env)
+
+                    # 첫 번째 환경을 활성화
+                    if not pm.env_manager.active_environment:
+                        pm.env_manager.set_active(env.id)
 
     @staticmethod
     def _create_folder(resource: Dict[str, Any]) -> RequestFolder:
@@ -212,12 +241,13 @@ class InsomniaParser:
         )
 
         # 환경 변수 추가
-        env_id = f"env_{InsomniaParser._generate_id()}"
-        environment = {
-            "_id": env_id,
+        # Base Environment (Global)
+        base_env_id = f"env_{InsomniaParser._generate_id()}"
+        base_environment = {
+            "_id": base_env_id,
             "_type": "environment",
             "name": "Base Environment",
-            "data": {},
+            "data": pm.env_manager.global_environment.variables,
             "dataPropertyOrder": None,
             "color": None,
             "isPrivate": False,
@@ -226,13 +256,25 @@ class InsomniaParser:
             "modified": InsomniaParser._get_timestamp(),
             "parentId": workspace_id
         }
+        resources.append(base_environment)
 
-        # 활성 환경이 있으면 변수 추가
+        # Sub Environments (활성 환경이 있으면 추가)
         if pm.env_manager.active_environment:
-            environment['data'] = pm.env_manager.active_environment.variables
-            environment['name'] = pm.env_manager.active_environment.name
-
-        resources.append(environment)
+            sub_env_id = f"env_{InsomniaParser._generate_id()}"
+            sub_environment = {
+                "_id": sub_env_id,
+                "_type": "environment",
+                "name": pm.env_manager.active_environment.name,
+                "data": pm.env_manager.active_environment.variables,
+                "dataPropertyOrder": None,
+                "color": None,
+                "isPrivate": False,
+                "metaSortKey": InsomniaParser._get_timestamp() + 1,
+                "created": InsomniaParser._get_timestamp(),
+                "modified": InsomniaParser._get_timestamp(),
+                "parentId": base_env_id  # Base Environment의 하위로 설정
+            }
+            resources.append(sub_environment)
 
         # Cookie Jar 추가
         jar_id = f"jar_{InsomniaParser._generate_id()}"

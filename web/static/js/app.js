@@ -91,6 +91,15 @@ class LuminaApp {
         document.getElementById('btn-cancel-import-share').addEventListener('click', () => this.hideImportShareModal());
         document.getElementById('btn-confirm-import-share').addEventListener('click', () => this.importShare());
 
+        // Global Constants 버튼
+        document.getElementById('btn-global-constants').addEventListener('click', () => this.showGlobalConstantsModal());
+
+        // Global Constants Modal
+        document.getElementById('btn-close-global-constants').addEventListener('click', () => this.hideGlobalConstantsModal());
+        document.getElementById('btn-cancel-global-constants').addEventListener('click', () => this.hideGlobalConstantsModal());
+        document.getElementById('btn-save-global-constants').addEventListener('click', () => this.saveGlobalConstants());
+        document.getElementById('btn-add-global-constant').addEventListener('click', () => this.addGlobalConstantRow());
+
         // Project Management
         document.getElementById('project-dropdown').addEventListener('change', (e) => this.onProjectChange(e.target.value));
         document.getElementById('btn-new-project').addEventListener('click', () => this.showNewProjectModal());
@@ -1396,8 +1405,106 @@ class LuminaApp {
         }
     }
 
-    async switchToProject(projectId) {
+    // ==================== Global Constants Functions ====================
+
+    async showGlobalConstantsModal() {
+        document.getElementById('global-constants-modal').style.display = 'flex';
+        await this.loadGlobalConstants();
+    }
+
+    hideGlobalConstantsModal() {
+        document.getElementById('global-constants-modal').style.display = 'none';
+    }
+
+    async loadGlobalConstants() {
         try {
+            const response = await fetch('/api/global-constants');
+            const data = await response.json();
+
+            const tbody = document.getElementById('global-constants-tbody');
+            tbody.innerHTML = '';
+
+            // Global constants가 있으면 표시
+            if (data && data.variables && Object.keys(data.variables).length > 0) {
+                for (const [key, value] of Object.entries(data.variables)) {
+                    this.addGlobalConstantRow(key, value);
+                }
+            } else {
+                // 빈 행 하나 추가
+                this.addGlobalConstantRow();
+            }
+        } catch (error) {
+            console.error('Failed to load global constants:', error);
+            alert('Global Constants를 불러오는 중 오류가 발생했습니다.');
+        }
+    }
+
+    addGlobalConstantRow(key = '', value = '') {
+        const tbody = document.getElementById('global-constants-tbody');
+        const row = document.createElement('tr');
+
+        row.innerHTML = `
+            <td><input type="text" value="${this.escapeHtml(key)}" placeholder="KEY" class="global-const-key"></td>
+            <td><input type="text" value="${this.escapeHtml(value)}" placeholder="value" class="global-const-value"></td>
+            <td><button class="btn-remove" onclick="this.closest('tr').remove()">×</button></td>
+        `;
+
+        tbody.appendChild(row);
+    }
+
+    async saveGlobalConstants() {
+        const tbody = document.getElementById('global-constants-tbody');
+        const rows = tbody.querySelectorAll('tr');
+        const constants = {};
+
+        rows.forEach(row => {
+            const keyInput = row.querySelector('.global-const-key');
+            const valueInput = row.querySelector('.global-const-value');
+
+            const key = keyInput.value.trim();
+            const value = valueInput.value.trim();
+
+            if (key) {  // 키가 있는 경우만 저장
+                constants[key] = value;
+            }
+        });
+
+        try {
+            const response = await fetch('/api/global-constants', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ constants })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert('Global Constants가 저장되었습니다!');
+                this.hideGlobalConstantsModal();
+            } else {
+                alert('저장 실패: ' + (result.error || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Failed to save global constants:', error);
+            alert('Global Constants 저장 중 오류가 발생했습니다.');
+        }
+    }
+
+    escapeHtml(text) {
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // ==================== Project Management Functions ====================
+
+    async switchToProject(projectId) {
+        try{
             const response = await fetch(`${API_BASE}/projects/${projectId}/activate`, {
                 method: 'PUT'
             });

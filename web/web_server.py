@@ -292,6 +292,23 @@ class LuminaWebServer:
                 return jsonify({'success': True})
             return jsonify({'error': 'Invalid environment ID'}), 400
 
+        # API: Global Constants 조회
+        @self.app.route('/api/global-constants', methods=['GET'])
+        def get_global_constants():
+            pm = self.get_session_project_manager()
+            return jsonify(pm.env_manager.global_environment.to_dict())
+
+        # API: Global Constants 업데이트
+        @self.app.route('/api/global-constants', methods=['POST'])
+        def update_global_constants():
+            pm = self.get_session_project_manager()
+            data = request.json
+            constants = data.get('constants', {})
+
+            # 기존 변수 모두 삭제하고 새로운 것으로 교체
+            pm.env_manager.global_environment.variables = constants
+            return jsonify({'success': True})
+
         # API: 프로젝트 저장
         @self.app.route('/api/project/save', methods=['POST'])
         def save_project():

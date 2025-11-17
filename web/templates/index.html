@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lumina ✨ - Web Interface</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
@@ -67,6 +70,11 @@
                     </button>
                     <button class="btn-import-share" id="btn-import-share" title="Import project from share URL">
                         📩 Import Share
+                    </button>
+                </div>
+                <div class="sidebar-actions-row">
+                    <button class="btn-new" id="btn-global-constants" title="Manage Global Constants (used across all environments)" style="width: 100%;">
+                        🌐 Global Constants
                     </button>
                 </div>
             </div>
@@ -179,6 +187,39 @@
                 <div class="modal-footer">
                     <button class="btn-cancel" id="btn-cancel-import-share">Cancel</button>
                     <button class="btn-primary" id="btn-confirm-import-share">Import Project</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Global Constants Modal -->
+        <div class="modal" id="global-constants-modal">
+            <div class="modal-content" style="max-width: 700px;">
+                <div class="modal-header">
+                    <h3>🌐 Global Constants</h3>
+                    <button class="modal-close" id="btn-close-global-constants">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="tab-help" style="margin-bottom: 1rem;">
+                        💡 Global constants are available in all environments using <code>{{variable}}</code> syntax
+                    </div>
+                    <table class="key-value-table">
+                        <thead>
+                            <tr>
+                                <th>Key</th>
+                                <th>Value</th>
+                                <th style="width: 50px;">
+                                    <button class="btn-new" id="btn-add-global-constant" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">+</button>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="global-constants-tbody">
+                            <!-- Global constants will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-cancel" id="btn-cancel-global-constants">Cancel</button>
+                    <button class="btn-primary" id="btn-save-global-constants">💾 Save</button>
                 </div>
             </div>
         </div>
