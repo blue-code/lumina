@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.project_manager import ProjectManager
 from core.http_client import HttpClient
+from core.share_manager import ShareManager
 from models.request_model import RequestModel, RequestFolder, HttpMethod, BodyType, AuthType
 from models.history_model import HistoryManager
 
@@ -52,6 +53,9 @@ class LuminaWebServer:
         self.project_manager = None  # Will be set by desktop app if needed
         self.http_client = None
         self.history_manager = None  # Shared history for desktop mode
+
+        # 공유 관리자
+        self.share_manager = ShareManager()
 
         # 서버 스레드
         self.server_thread = None
@@ -729,6 +733,141 @@ class LuminaWebServer:
                 'success': True,
                 'folder': folder.to_dict()
             })
+
+        # ======================
+        # 프로젝트 공유 API
+        # ======================
+
+        # API: 프로젝트 공유 생성
+        @self.app.route('/api/share/create', methods=['POST'])
+        def create_share():
+            pm = self.get_session_project_manager()
+            data = request.json
+
+            # 옵션 파라미터
+            expires_hours = data.get('expires_hours', None)
+            read_only = data.get('read_only', True)
+
+            try:
+                # 프로젝트 데이터를 공유 가능한 형태로 저장
+                share_id = self.share_manager.create_share(
+                    project_data=pm.to_dict(),
+                    expires_hours=expires_hours,
+                    read_only=read_only
+                )
+
+                # 공유 URL 생성
+                share_url = f"{request.host_url}share/{share_id}"
+
+                return jsonify({
+                    'success': True,
+                    'share_id': share_id,
+                    'share_url': share_url,
+                    'expires_hours': expires_hours,
+                    'read_only': read_only
+                }), 201
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        # API: 공유 프로젝트 조회
+        @self.app.route('/api/share/<share_id>', methods=['GET'])
+        def get_share(share_id):
+            try:
+                share_data = self.share_manager.get_share(share_id)
+
+                if not share_data:
+                    return jsonify({'error': 'Share not found or expired'}), 404
+
+                return jsonify({
+                    'success': True,
+                    'share_id': share_data['share_id'],
+                    'created_at': share_data['created_at'],
+                    'expires_at': share_data.get('expires_at'),
+                    'read_only': share_data.get('read_only', True),
+                    'project': share_data['project']
+                })
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        # API: 공유 프로젝트를 현재 세션에 불러오기
+        @self.app.route('/api/share/<share_id>/import', methods=['POST'])
+        def import_share(share_id):
+            try:
+                share_data = self.share_manager.get_share(share_id)
+
+                if not share_data:
+                    return jsonify({'error': 'Share not found or expired'}), 404
+
+                # 프로젝트 복원
+                pm = ProjectManager.from_dict(share_data['project'])
+
+                # 세션에 추가
+                if 'session_id' not in session:
+                    session['session_id'] = str(uuid.uuid4())
+
+                session_id = session['session_id']
+
+                with self.sessions_lock:
+                    # 새 프로젝트로 추가
+                    project_id = str(uuid.uuid4())
+                    if session_id not in self.sessions:
+                        self.sessions[session_id] = {}
+                    self.sessions[session_id][project_id] = pm
+                    self.active_projects[session_id] = project_id
+
+                return jsonify({
+                    'success': True,
+                    'project': {
+                        'id': project_id,
+                        'name': pm.project_name
+                    },
+                    'share_info': {
+                        'share_id': share_id,
+                        'read_only': share_data.get('read_only', True)
+                    }
+                })
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        # API: 공유 삭제
+        @self.app.route('/api/share/<share_id>', methods=['DELETE'])
+        def delete_share(share_id):
+            try:
+                if self.share_manager.delete_share(share_id):
+                    return jsonify({'success': True})
+                return jsonify({'error': 'Share not found'}), 404
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        # API: 모든 공유 목록 조회
+        @self.app.route('/api/share/list', methods=['GET'])
+        def list_shares():
+            try:
+                shares = self.share_manager.list_shares()
+                return jsonify({
+                    'success': True,
+                    'shares': shares,
+                    'count': len(shares)
+                })
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        # API: 만료된 공유 정리
+        @self.app.route('/api/share/cleanup', methods=['POST'])
+        def cleanup_shares():
+            try:
+                deleted_count = self.share_manager.cleanup_expired()
+                return jsonify({
+                    'success': True,
+                    'deleted_count': deleted_count
+                })
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        # 공유 페이지 (프론트엔드)
+        @self.app.route('/share/<share_id>')
+        def share_page(share_id):
+            return render_template('share.html', share_id=share_id)
 
     def start(self):
         """서버 시작 (별도 스레드에서)"""

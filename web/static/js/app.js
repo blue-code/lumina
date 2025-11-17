@@ -60,6 +60,21 @@ class LuminaApp {
         document.getElementById('btn-close-export2').addEventListener('click', () => this.hideExportModal());
         document.getElementById('btn-copy-export').addEventListener('click', () => this.copyExportToClipboard());
 
+        // Share 버튼
+        document.getElementById('btn-share-project').addEventListener('click', () => this.showShareModal());
+        document.getElementById('btn-import-share').addEventListener('click', () => this.showImportShareModal());
+
+        // Share Modal
+        document.getElementById('btn-close-share').addEventListener('click', () => this.hideShareModal());
+        document.getElementById('btn-cancel-share').addEventListener('click', () => this.hideShareModal());
+        document.getElementById('btn-create-share').addEventListener('click', () => this.createShare());
+        document.getElementById('btn-copy-share').addEventListener('click', () => this.copyShareURL());
+
+        // Import Share Modal
+        document.getElementById('btn-close-import-share').addEventListener('click', () => this.hideImportShareModal());
+        document.getElementById('btn-cancel-import-share').addEventListener('click', () => this.hideImportShareModal());
+        document.getElementById('btn-confirm-import-share').addEventListener('click', () => this.importShare());
+
         // Project Management
         document.getElementById('project-dropdown').addEventListener('change', (e) => this.onProjectChange(e.target.value));
         document.getElementById('btn-new-project').addEventListener('click', () => this.showNewProjectModal());
@@ -1232,6 +1247,155 @@ class LuminaApp {
                 this.renderProjectsList();
             }
         });
+    }
+
+    // ==================== Share Functions ====================
+
+    showShareModal() {
+        document.getElementById('share-modal').style.display = 'flex';
+        // 초기화
+        document.getElementById('share-url-container').style.display = 'none';
+        document.getElementById('btn-create-share').style.display = 'block';
+        document.getElementById('btn-copy-share').style.display = 'none';
+        document.getElementById('share-expires').value = '';
+        document.getElementById('share-readonly').checked = true;
+    }
+
+    hideShareModal() {
+        document.getElementById('share-modal').style.display = 'none';
+    }
+
+    async createShare() {
+        const expiresHours = document.getElementById('share-expires').value;
+        const readOnly = document.getElementById('share-readonly').checked;
+
+        const btn = document.getElementById('btn-create-share');
+        btn.disabled = true;
+        btn.textContent = '생성 중...';
+
+        try {
+            const payload = {
+                read_only: readOnly
+            };
+
+            if (expiresHours) {
+                payload.expires_hours = parseInt(expiresHours);
+            }
+
+            const response = await fetch(`${API_BASE}/share/create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // URL 표시
+                document.getElementById('share-url-input').value = result.share_url;
+                document.getElementById('share-url-container').style.display = 'block';
+                document.getElementById('btn-create-share').style.display = 'none';
+                document.getElementById('btn-copy-share').style.display = 'block';
+            } else {
+                alert(`공유 링크 생성 실패: ${result.error}`);
+                btn.disabled = false;
+                btn.textContent = 'Create Share Link';
+            }
+        } catch (error) {
+            console.error('Failed to create share:', error);
+            alert('공유 링크 생성 중 오류가 발생했습니다.');
+            btn.disabled = false;
+            btn.textContent = 'Create Share Link';
+        }
+    }
+
+    copyShareURL() {
+        const urlInput = document.getElementById('share-url-input');
+        urlInput.select();
+        document.execCommand('copy');
+
+        const btn = document.getElementById('btn-copy-share');
+        const originalText = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => {
+            btn.textContent = originalText;
+        }, 2000);
+    }
+
+    showImportShareModal() {
+        document.getElementById('import-share-modal').style.display = 'flex';
+        document.getElementById('import-share-input').value = '';
+    }
+
+    hideImportShareModal() {
+        document.getElementById('import-share-modal').style.display = 'none';
+    }
+
+    async importShare() {
+        const input = document.getElementById('import-share-input').value.trim();
+
+        if (!input) {
+            alert('공유 URL 또는 ID를 입력하세요.');
+            return;
+        }
+
+        // URL에서 share ID 추출 (https://example.com/share/abc123 -> abc123)
+        let shareId = input;
+        if (input.includes('/share/')) {
+            const parts = input.split('/share/');
+            shareId = parts[1];
+        }
+
+        const btn = document.getElementById('btn-confirm-import-share');
+        btn.disabled = true;
+        btn.textContent = '가져오는 중...';
+
+        try {
+            const response = await fetch(`${API_BASE}/share/${shareId}/import`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert(`프로젝트 "${result.project.name}"를 성공적으로 가져왔습니다!`);
+                this.hideImportShareModal();
+
+                // 프로젝트 목록 새로고침
+                await this.loadProjects();
+
+                // 가져온 프로젝트로 전환
+                await this.switchToProject(result.project.id);
+            } else {
+                alert(`프로젝트 가져오기 실패: ${result.error}`);
+                btn.disabled = false;
+                btn.textContent = 'Import Project';
+            }
+        } catch (error) {
+            console.error('Failed to import share:', error);
+            alert('프로젝트 가져오기 중 오류가 발생했습니다.');
+            btn.disabled = false;
+            btn.textContent = 'Import Project';
+        }
+    }
+
+    async switchToProject(projectId) {
+        try {
+            const response = await fetch(`${API_BASE}/projects/${projectId}/activate`, {
+                method: 'PUT'
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.currentProject = result.project;
+                await this.loadFolderTree();
+                this.updateProjectDropdown();
+            }
+        } catch (error) {
+            console.error('Failed to switch project:', error);
+        }
     }
 }
 

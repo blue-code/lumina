@@ -550,6 +550,23 @@ textarea {
     transform: translateY(-1px);
 }
 
+.btn-share, .btn-import-share {
+    background: #9C27B0;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    flex: 1;
+    transition: all 0.2s;
+}
+
+.btn-share:hover, .btn-import-share:hover {
+    background: #7B1FA2;
+    transform: translateY(-1px);
+}
+
 /* Modal */
 .modal {
     display: none;

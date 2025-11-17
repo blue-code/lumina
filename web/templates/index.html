@@ -53,6 +53,14 @@
                         📤 Export
                     </button>
                 </div>
+                <div class="sidebar-actions-row">
+                    <button class="btn-share" id="btn-share-project" title="Share this project via URL">
+                        🔗 Share
+                    </button>
+                    <button class="btn-import-share" id="btn-import-share" title="Import project from share URL">
+                        📩 Import Share
+                    </button>
+                </div>
             </div>
             <div class="folder-tree" id="folder-tree">
                 <!-- Folder tree will be loaded here -->
@@ -95,6 +103,74 @@
                 <div class="modal-footer">
                     <button class="btn-primary" id="btn-copy-export">📋 Copy to Clipboard</button>
                     <button class="btn-cancel" id="btn-close-export2">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Share Project Modal -->
+        <div class="modal" id="share-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>🔗 Share Project</h3>
+                    <button class="modal-close" id="btn-close-share">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="tab-help" style="margin-bottom: 1rem;">
+                        💡 Create a shareable link for this project. Others can import it using the URL.
+                    </div>
+                    <div class="form-group">
+                        <label>만료 시간 (선택사항):</label>
+                        <select id="share-expires">
+                            <option value="">무제한</option>
+                            <option value="1">1시간</option>
+                            <option value="24">24시간</option>
+                            <option value="168">7일</option>
+                            <option value="720">30일</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="share-readonly" checked>
+                            읽기 전용
+                        </label>
+                    </div>
+                    <div id="share-url-container" style="display: none;">
+                        <div class="tab-help" style="margin: 1rem 0;">
+                            ✅ 공유 링크가 생성되었습니다!
+                        </div>
+                        <div class="form-group">
+                            <label>공유 URL:</label>
+                            <input type="text" id="share-url-input" readonly style="width: 100%; padding: 0.5rem; margin-bottom: 0.5rem;">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-cancel" id="btn-cancel-share">Close</button>
+                    <button class="btn-primary" id="btn-create-share">Create Share Link</button>
+                    <button class="btn-primary" id="btn-copy-share" style="display: none;">📋 Copy URL</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Share Modal -->
+        <div class="modal" id="import-share-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>📩 Import from Share URL</h3>
+                    <button class="modal-close" id="btn-close-import-share">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="tab-help" style="margin-bottom: 1rem;">
+                        💡 Enter the share URL or share ID to import a project.
+                    </div>
+                    <div class="form-group">
+                        <label>Share URL or ID:</label>
+                        <input type="text" id="import-share-input" placeholder="https://example.com/share/abc123 or abc123" style="width: 100%; padding: 0.5rem;">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-cancel" id="btn-cancel-import-share">Cancel</button>
+                    <button class="btn-primary" id="btn-confirm-import-share">Import Project</button>
                 </div>
             </div>
         </div>
