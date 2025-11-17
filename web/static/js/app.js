@@ -68,6 +68,7 @@ class LuminaApp {
         document.getElementById('btn-close-import-insomnia').addEventListener('click', () => this.hideImportInsomniaModal());
         document.getElementById('btn-cancel-import-insomnia').addEventListener('click', () => this.hideImportInsomniaModal());
         document.getElementById('btn-confirm-import-insomnia').addEventListener('click', () => this.importInsomnia());
+        document.getElementById('import-insomnia-file').addEventListener('change', (e) => this.onInsomniaFileSelected(e));
 
         // Export Insomnia Modal
         document.getElementById('btn-close-export-insomnia').addEventListener('click', () => this.hideExportInsomniaModal());
@@ -1417,18 +1418,63 @@ class LuminaApp {
 
     showImportInsomniaModal() {
         document.getElementById('import-insomnia-modal').style.display = 'flex';
-        document.getElementById('import-insomnia-textarea').value = '';
+        // 초기화
+        document.getElementById('import-insomnia-file').value = '';
+        document.getElementById('import-insomnia-preview').style.display = 'none';
+        document.getElementById('btn-confirm-import-insomnia').disabled = true;
+        this.selectedInsomniaFile = null;
     }
 
     hideImportInsomniaModal() {
         document.getElementById('import-insomnia-modal').style.display = 'none';
     }
 
-    async importInsomnia() {
-        const content = document.getElementById('import-insomnia-textarea').value.trim();
+    onInsomniaFileSelected(event) {
+        const file = event.target.files[0];
+        if (!file) {
+            document.getElementById('import-insomnia-preview').style.display = 'none';
+            document.getElementById('btn-confirm-import-insomnia').disabled = true;
+            this.selectedInsomniaFile = null;
+            return;
+        }
 
-        if (!content) {
-            alert('Insomnia JSON을 입력하세요.');
+        // 파일 읽기
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const content = e.target.result;
+                const jsonData = JSON.parse(content);
+
+                // 워크스페이스 이름 찾기
+                let projectName = 'Unknown Project';
+                if (jsonData.resources) {
+                    const workspace = jsonData.resources.find(r => r._type === 'workspace');
+                    if (workspace) {
+                        projectName = workspace.name || 'Unknown Project';
+                    }
+                }
+
+                // 미리보기 표시
+                document.getElementById('import-insomnia-filename').textContent = file.name;
+                document.getElementById('import-insomnia-projectname').textContent = projectName;
+                document.getElementById('import-insomnia-preview').style.display = 'block';
+                document.getElementById('btn-confirm-import-insomnia').disabled = false;
+
+                // 파일 내용 저장
+                this.selectedInsomniaFile = content;
+            } catch (error) {
+                alert('유효하지 않은 JSON 파일입니다.');
+                document.getElementById('import-insomnia-preview').style.display = 'none';
+                document.getElementById('btn-confirm-import-insomnia').disabled = true;
+                this.selectedInsomniaFile = null;
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    async importInsomnia() {
+        if (!this.selectedInsomniaFile) {
+            alert('파일을 선택하세요.');
             return;
         }
 
@@ -1440,7 +1486,7 @@ class LuminaApp {
             const response = await fetch(`${API_BASE}/import/insomnia`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: content })
+                body: JSON.stringify({ content: this.selectedInsomniaFile })
             });
 
             const result = await response.json();

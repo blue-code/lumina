@@ -164,9 +164,10 @@ Request URL:
 1. Insomnia 앱에서 `Application` → `Export Data` → `Export to File`
 2. JSON 파일 저장
 3. Lumina 웹 UI: 좌측 사이드바에서 `📥 Insomnia` 버튼 클릭
-4. JSON 파일 내용을 붙여넣기
-5. `Import as New Project` 클릭
-6. 새 프로젝트로 자동 추가됨
+4. `Choose Insomnia JSON File` 버튼으로 파일 선택
+5. 파일 정보 확인 (프로젝트 이름 미리보기)
+6. `Import as New Project` 클릭
+7. 새 프로젝트로 자동 추가됨
 
 **Insomnia로 내보내기:**
 1. Lumina 웹 UI: 좌측 사이드바에서 `📤 Insomnia` 버튼 클릭

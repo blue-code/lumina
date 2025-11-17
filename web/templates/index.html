@@ -192,13 +192,29 @@
                 </div>
                 <div class="modal-body">
                     <div class="tab-help" style="margin-bottom: 1rem;">
-                        💡 Paste your Insomnia export JSON here. A new project will be created.
+                        💡 Select your Insomnia export JSON file. A new project will be created.
                     </div>
-                    <textarea id="import-insomnia-textarea" placeholder="Paste Insomnia JSON content here...&#10;&#10;Example:&#10;{&#10;  &quot;_type&quot;: &quot;export&quot;,&#10;  &quot;__export_format&quot;: 4,&#10;  &quot;resources&quot;: [...]&#10;}"></textarea>
+                    <div class="form-group">
+                        <label for="import-insomnia-file" style="display: block; margin-bottom: 0.5rem;">
+                            Choose Insomnia JSON File:
+                        </label>
+                        <input
+                            type="file"
+                            id="import-insomnia-file"
+                            accept=".json,application/json"
+                            style="width: 100%; padding: 0.5rem; border: 2px dashed #ddd; border-radius: 4px; cursor: pointer;"
+                        >
+                    </div>
+                    <div id="import-insomnia-preview" style="display: none; margin-top: 1rem;">
+                        <div class="tab-help" style="background: #f0f7ff; color: #0066cc; padding: 0.75rem; border-radius: 4px;">
+                            <strong>📄 Selected File:</strong> <span id="import-insomnia-filename"></span><br>
+                            <strong>📦 Project:</strong> <span id="import-insomnia-projectname"></span>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn-cancel" id="btn-cancel-import-insomnia">Cancel</button>
-                    <button class="btn-primary" id="btn-confirm-import-insomnia">Import as New Project</button>
+                    <button class="btn-primary" id="btn-confirm-import-insomnia" disabled>Import as New Project</button>
                 </div>
             </div>
         </div>
