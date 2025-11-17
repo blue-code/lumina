@@ -22,6 +22,7 @@ Python 기반의 세련되고 강력한 REST API 테스트 도구
 - **프로젝트 공유 URL**: 각 프로젝트를 고유한 URL로 공유하고 불러오기
 - **폴더 구조**: 요청을 폴더로 그룹화하여 체계적 관리
 - **마크다운 Import/Export**: 마크다운 형식으로 API 정의를 가져오고 내보내기
+- **Insomnia Import/Export**: Insomnia 앱과 완벽 호환되는 JSON 형식 지원
 
 ## 🚀 빠른 시작
 
@@ -123,13 +124,13 @@ Request URL:
 
 **가져오기 (Import):**
 1. 데스크톱: `File` → `Import from Markdown...` (`Ctrl+I`)
-2. 웹: 좌측 사이드바에서 `📥 Import` 버튼 클릭
+2. 웹: 좌측 사이드바에서 `📥 Markdown` 버튼 클릭
 3. 마크다운 파일 선택 또는 내용 붙여넣기
 4. 자동으로 요청이 생성됨
 
 **내보내기 (Export):**
 1. 데스크톱: `File` → `Export to Markdown...` (`Ctrl+E`)
-2. 웹: 좌측 사이드바에서 `📤 Export` 버튼 클릭
+2. 웹: 좌측 사이드바에서 `📤 Markdown` 버튼 클릭
 3. 마크다운 형식으로 모든 요청이 변환됨
 4. 파일로 저장하거나 클립보드에 복사
 
@@ -156,6 +157,32 @@ Request URL:
 ```
 
 샘플 파일: `sample_api.md` 참고
+
+### 5. Insomnia JSON Import/Export
+
+**Insomnia에서 가져오기:**
+1. Insomnia 앱에서 `Application` → `Export Data` → `Export to File`
+2. JSON 파일 저장
+3. Lumina 웹 UI: 좌측 사이드바에서 `📥 Insomnia` 버튼 클릭
+4. JSON 파일 내용을 붙여넣기
+5. `Import as New Project` 클릭
+6. 새 프로젝트로 자동 추가됨
+
+**Insomnia로 내보내기:**
+1. Lumina 웹 UI: 좌측 사이드바에서 `📤 Insomnia` 버튼 클릭
+2. JSON 형식으로 프로젝트가 표시됨
+3. `📋 Copy to Clipboard` 또는 `💾 Download JSON` 클릭
+4. Insomnia 앱에서 `Application` → `Import Data` → `From File` or `From Clipboard`
+5. 모든 요청, 폴더, 환경 변수가 복원됨
+
+**지원 기능:**
+- 모든 HTTP 메서드 (GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS)
+- Headers, Query Parameters, Request Body
+- Authentication (Basic Auth, Bearer Token)
+- 폴더 구조 (request_group)
+- 환경 변수
+- 요청 설명 (Description)
+- Form Data (multipart/form-data, x-www-form-urlencoded)
 
 ## 🏗️ 프로젝트 구조
 

@@ -373,6 +373,67 @@ class LuminaWebServer:
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
 
+        # API: Insomnia JSON 임포트 (새 프로젝트 생성)
+        @self.app.route('/api/import/insomnia', methods=['POST'])
+        def import_insomnia():
+            data = request.json
+            insomnia_json = data.get('content')
+            if not insomnia_json:
+                return jsonify({'error': 'Insomnia JSON content required'}), 400
+
+            try:
+                from utils.insomnia_parser import InsomniaParser
+                import json as json_lib
+
+                # JSON 파싱
+                if isinstance(insomnia_json, str):
+                    insomnia_data = json_lib.loads(insomnia_json)
+                else:
+                    insomnia_data = insomnia_json
+
+                # Insomnia JSON을 ProjectManager로 변환
+                pm = InsomniaParser.parse_insomnia_json(insomnia_data)
+
+                # 세션에 새 프로젝트로 추가
+                if 'session_id' not in session:
+                    session['session_id'] = str(uuid.uuid4())
+
+                session_id = session['session_id']
+
+                with self.sessions_lock:
+                    # 새 프로젝트로 추가
+                    project_id = str(uuid.uuid4())
+                    if session_id not in self.sessions:
+                        self.sessions[session_id] = {}
+                    self.sessions[session_id][project_id] = pm
+                    self.active_projects[session_id] = project_id
+
+                return jsonify({
+                    'success': True,
+                    'project': {
+                        'id': project_id,
+                        'name': pm.project_name
+                    },
+                    'imported_count': len(pm.get_all_requests())
+                })
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        # API: Insomnia JSON 내보내기
+        @self.app.route('/api/export/insomnia', methods=['GET'])
+        def export_insomnia():
+            pm = self.get_session_project_manager()
+            try:
+                from utils.insomnia_parser import InsomniaParser
+                insomnia_json = InsomniaParser.export_to_insomnia(pm)
+                return jsonify({
+                    'success': True,
+                    'content': insomnia_json,
+                    'request_count': len(pm.get_all_requests())
+                })
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
         # API: 히스토리 조회
         @self.app.route('/api/history/<request_id>', methods=['GET'])
         def get_history(request_id):

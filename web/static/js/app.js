@@ -60,6 +60,21 @@ class LuminaApp {
         document.getElementById('btn-close-export2').addEventListener('click', () => this.hideExportModal());
         document.getElementById('btn-copy-export').addEventListener('click', () => this.copyExportToClipboard());
 
+        // Insomnia Import/Export 버튼
+        document.getElementById('btn-import-insomnia').addEventListener('click', () => this.showImportInsomniaModal());
+        document.getElementById('btn-export-insomnia').addEventListener('click', () => this.showExportInsomniaModal());
+
+        // Import Insomnia Modal
+        document.getElementById('btn-close-import-insomnia').addEventListener('click', () => this.hideImportInsomniaModal());
+        document.getElementById('btn-cancel-import-insomnia').addEventListener('click', () => this.hideImportInsomniaModal());
+        document.getElementById('btn-confirm-import-insomnia').addEventListener('click', () => this.importInsomnia());
+
+        // Export Insomnia Modal
+        document.getElementById('btn-close-export-insomnia').addEventListener('click', () => this.hideExportInsomniaModal());
+        document.getElementById('btn-close-export-insomnia2').addEventListener('click', () => this.hideExportInsomniaModal());
+        document.getElementById('btn-copy-export-insomnia').addEventListener('click', () => this.copyExportInsomniaToClipboard());
+        document.getElementById('btn-download-export-insomnia').addEventListener('click', () => this.downloadExportInsomnia());
+
         // Share 버튼
         document.getElementById('btn-share-project').addEventListener('click', () => this.showShareModal());
         document.getElementById('btn-import-share').addEventListener('click', () => this.showImportShareModal());
@@ -1396,6 +1411,118 @@ class LuminaApp {
         } catch (error) {
             console.error('Failed to switch project:', error);
         }
+    }
+
+    // ==================== Insomnia Import/Export Functions ====================
+
+    showImportInsomniaModal() {
+        document.getElementById('import-insomnia-modal').style.display = 'flex';
+        document.getElementById('import-insomnia-textarea').value = '';
+    }
+
+    hideImportInsomniaModal() {
+        document.getElementById('import-insomnia-modal').style.display = 'none';
+    }
+
+    async importInsomnia() {
+        const content = document.getElementById('import-insomnia-textarea').value.trim();
+
+        if (!content) {
+            alert('Insomnia JSON을 입력하세요.');
+            return;
+        }
+
+        const btn = document.getElementById('btn-confirm-import-insomnia');
+        btn.disabled = true;
+        btn.textContent = '가져오는 중...';
+
+        try {
+            const response = await fetch(`${API_BASE}/import/insomnia`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: content })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert(`프로젝트 "${result.project.name}"를 성공적으로 가져왔습니다! (${result.imported_count}개 요청)`);
+                this.hideImportInsomniaModal();
+
+                // 프로젝트 목록 새로고침
+                await this.loadProjects();
+
+                // 가져온 프로젝트로 전환
+                await this.switchToProject(result.project.id);
+            } else {
+                alert(`Insomnia JSON 가져오기 실패: ${result.error}`);
+                btn.disabled = false;
+                btn.textContent = 'Import as New Project';
+            }
+        } catch (error) {
+            console.error('Failed to import Insomnia JSON:', error);
+            alert('Insomnia JSON 가져오기 중 오류가 발생했습니다.');
+            btn.disabled = false;
+            btn.textContent = 'Import as New Project';
+        }
+    }
+
+    showExportInsomniaModal() {
+        document.getElementById('export-insomnia-modal').style.display = 'flex';
+        this.loadExportInsomnia();
+    }
+
+    hideExportInsomniaModal() {
+        document.getElementById('export-insomnia-modal').style.display = 'none';
+    }
+
+    async loadExportInsomnia() {
+        try {
+            const response = await fetch(`${API_BASE}/export/insomnia`);
+            const result = await response.json();
+
+            if (result.success) {
+                document.getElementById('export-insomnia-textarea').value = JSON.stringify(result.content, null, 2);
+            } else {
+                alert(`Insomnia JSON 내보내기 실패: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Failed to export Insomnia JSON:', error);
+            alert('Insomnia JSON 내보내기 중 오류가 발생했습니다.');
+        }
+    }
+
+    copyExportInsomniaToClipboard() {
+        const textarea = document.getElementById('export-insomnia-textarea');
+        textarea.select();
+        document.execCommand('copy');
+
+        const btn = document.getElementById('btn-copy-export-insomnia');
+        const originalText = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => {
+            btn.textContent = originalText;
+        }, 2000);
+    }
+
+    downloadExportInsomnia() {
+        const content = document.getElementById('export-insomnia-textarea').value;
+        const blob = new Blob([content], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${this.currentProject?.name || 'Lumina'}_Insomnia_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        const btn = document.getElementById('btn-download-export-insomnia');
+        const originalText = btn.textContent;
+        btn.textContent = '✅ Downloaded!';
+        setTimeout(() => {
+            btn.textContent = originalText;
+        }, 2000);
     }
 }
 

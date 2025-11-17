@@ -47,10 +47,18 @@
                 </button>
                 <div class="sidebar-actions-row">
                     <button class="btn-import" id="btn-import-md" title="Import requests from Markdown">
-                        📥 Import
+                        📥 Markdown
                     </button>
                     <button class="btn-export" id="btn-export-md" title="Export requests to Markdown">
-                        📤 Export
+                        📤 Markdown
+                    </button>
+                </div>
+                <div class="sidebar-actions-row">
+                    <button class="btn-import" id="btn-import-insomnia" title="Import from Insomnia JSON">
+                        📥 Insomnia
+                    </button>
+                    <button class="btn-export" id="btn-export-insomnia" title="Export to Insomnia JSON">
+                        📤 Insomnia
                     </button>
                 </div>
                 <div class="sidebar-actions-row">
@@ -171,6 +179,47 @@
                 <div class="modal-footer">
                     <button class="btn-cancel" id="btn-cancel-import-share">Cancel</button>
                     <button class="btn-primary" id="btn-confirm-import-share">Import Project</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Insomnia Modal -->
+        <div class="modal" id="import-insomnia-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>📥 Import from Insomnia JSON</h3>
+                    <button class="modal-close" id="btn-close-import-insomnia">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="tab-help" style="margin-bottom: 1rem;">
+                        💡 Paste your Insomnia export JSON here. A new project will be created.
+                    </div>
+                    <textarea id="import-insomnia-textarea" placeholder="Paste Insomnia JSON content here...&#10;&#10;Example:&#10;{&#10;  &quot;_type&quot;: &quot;export&quot;,&#10;  &quot;__export_format&quot;: 4,&#10;  &quot;resources&quot;: [...]&#10;}"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-cancel" id="btn-cancel-import-insomnia">Cancel</button>
+                    <button class="btn-primary" id="btn-confirm-import-insomnia">Import as New Project</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Insomnia Modal -->
+        <div class="modal" id="export-insomnia-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>📤 Export to Insomnia JSON</h3>
+                    <button class="modal-close" id="btn-close-export-insomnia">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="tab-help" style="margin-bottom: 1rem;">
+                        💡 Your project exported as Insomnia JSON. Copy and import it in Insomnia app.
+                    </div>
+                    <textarea id="export-insomnia-textarea" readonly></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-primary" id="btn-copy-export-insomnia">📋 Copy to Clipboard</button>
+                    <button class="btn-primary" id="btn-download-export-insomnia">💾 Download JSON</button>
+                    <button class="btn-cancel" id="btn-close-export-insomnia2">Close</button>
                 </div>
             </div>
         </div>
