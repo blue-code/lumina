@@ -20,6 +20,7 @@ class LuminaApp {
         await this.loadFolderTree();
         this.setupEventListeners();
         this.startAutoSave();
+        this.setupResizers();
     }
 
     setupEventListeners() {
@@ -135,12 +136,12 @@ class LuminaApp {
 
         // Auth 입력 필드 변경
         ['auth-basic-username', 'auth-basic-password', 'auth-bearer-token',
-         'auth-apikey-name', 'auth-apikey-value', 'auth-apikey-location'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.addEventListener('change', () => this.saveCurrentRequest());
-            }
-        });
+            'auth-apikey-name', 'auth-apikey-value', 'auth-apikey-location'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('change', () => this.saveCurrentRequest());
+                }
+            });
 
         // URL 입력 변경
         document.getElementById('input-url').addEventListener('change', () => this.saveCurrentRequest());
@@ -1504,7 +1505,7 @@ class LuminaApp {
     // ==================== Project Management Functions ====================
 
     async switchToProject(projectId) {
-        try{
+        try {
             const response = await fetch(`${API_BASE}/projects/${projectId}/activate`, {
                 method: 'PUT'
             });
@@ -1676,6 +1677,58 @@ class LuminaApp {
         setTimeout(() => {
             btn.textContent = originalText;
         }, 2000);
+    }
+
+    setupResizers() {
+        const sidebar = document.getElementById('sidebar-panel');
+        const mainPanel = document.getElementById('main-panel');
+        const responsePanel = document.getElementById('response-panel');
+        const sidebarResizer = document.getElementById('resizer-sidebar');
+        const responseResizer = document.getElementById('resizer-response');
+
+        if (!sidebar || !sidebarResizer) return;
+
+        let isResizingSidebar = false;
+        let isResizingResponse = false;
+        let startX = 0;
+        let startWidth = 0;
+
+        sidebarResizer.addEventListener('mousedown', (e) => {
+            isResizingSidebar = true;
+            startX = e.clientX;
+            startWidth = sidebar.offsetWidth;
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        });
+
+        responseResizer.addEventListener('mousedown', (e) => {
+            isResizingResponse = true;
+            startX = e.clientX;
+            startWidth = responsePanel.offsetWidth;
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isResizingSidebar) {
+                const newWidth = startWidth + (e.clientX - startX);
+                if (newWidth >= 200 && newWidth <= 600) {
+                    sidebar.style.width = newWidth + 'px';
+                }
+            } else if (isResizingResponse) {
+                const newWidth = startWidth - (e.clientX - startX);
+                if (newWidth >= 300 && newWidth <= 800) {
+                    responsePanel.style.width = newWidth + 'px';
+                }
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isResizingSidebar = false;
+            isResizingResponse = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        });
     }
 }
 
