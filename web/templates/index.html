@@ -39,19 +39,29 @@
                 </div>
             </div>
             <div class="sidebar-actions">
-                <button class="btn-new" id="btn-new-folder" title="Create a new folder">
-                    📁 New Folder
-                </button>
-                <button class="btn-new" id="btn-new-request" title="Create a new request">
-                    ➕ New Request
-                </button>
                 <div class="sidebar-actions-row">
-                    <button class="btn-import" id="btn-import-md" title="Import requests from Markdown">
-                        📥 Import
+                    <button class="btn-new-compact" id="btn-new-request" title="Create a new request">
+                        ➕ New
                     </button>
-                    <button class="btn-export" id="btn-export-md" title="Export requests to Markdown">
-                        📤 Export
+                    <button class="btn-new-compact" id="btn-new-folder" title="Create a new folder">
+                        📁 Folder
                     </button>
+                    <button class="btn-more" id="btn-more" title="More options">
+                        ⋮
+                    </button>
+                </div>
+            </div>
+            <!-- More Menu Dropdown -->
+            <div class="more-menu hidden" id="more-menu">
+                <div class="more-menu-item" id="menu-import-insomnia">
+                    📥 Import from Insomnia
+                </div>
+                <div class="more-menu-item" id="menu-export-insomnia">
+                    📤 Export to Insomnia
+                </div>
+                <div class="more-menu-divider"></div>
+                <div class="more-menu-item" id="menu-clear-all">
+                    🗑️ Clear All Data
                 </div>
             </div>
             <div class="folder-tree" id="folder-tree">
@@ -59,42 +69,46 @@
             </div>
         </div>
 
-        <!-- Import Markdown Modal -->
-        <div class="modal" id="import-modal">
+        <!-- Import Insomnia Modal -->
+        <div class="modal" id="import-insomnia-modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>📥 Import from Markdown</h3>
-                    <button class="modal-close" id="btn-close-import">&times;</button>
+                    <h3>📥 Import from Insomnia</h3>
+                    <button class="modal-close" id="btn-close-import-insomnia">&times;</button>
                 </div>
                 <div class="modal-body">
                     <div class="tab-help" style="margin-bottom: 1rem;">
-                        💡 Paste your markdown API documentation here. Supports standard markdown format with HTTP methods and URLs.
+                        💡 Paste your Insomnia export JSON here or upload a file.
                     </div>
-                    <textarea id="import-markdown-textarea" placeholder="Paste your markdown content here...&#10;&#10;Example:&#10;# My API Collection&#10;&#10;## Get Users&#10;GET https://api.example.com/users&#10;&#10;## Create User&#10;POST https://api.example.com/users"></textarea>
+                    <div style="margin-bottom: 1rem;">
+                        <input type="file" id="insomnia-import-file" accept=".json" style="margin-bottom: 0.5rem;">
+                    </div>
+                    <textarea id="import-insomnia-textarea" placeholder='Paste Insomnia JSON here...&#10;&#10;Example:&#10;{&#10;  "_type": "export",&#10;  "__export_format": 4,&#10;  "resources": [...]&#10;}'></textarea>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn-cancel" id="btn-cancel-import">Cancel</button>
-                    <button class="btn-primary" id="btn-confirm-import">Import</button>
+                    <button class="btn-cancel" id="btn-cancel-import-insomnia">Cancel</button>
+                    <button class="btn-primary" id="btn-confirm-import-insomnia">Import</button>
                 </div>
             </div>
         </div>
 
-        <!-- Export Markdown Modal -->
-        <div class="modal" id="export-modal">
+        <!-- Export Insomnia Modal -->
+        <div class="modal" id="export-insomnia-modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>📤 Export to Markdown</h3>
-                    <button class="modal-close" id="btn-close-export">&times;</button>
+                    <h3>📤 Export to Insomnia</h3>
+                    <button class="modal-close" id="btn-close-export-insomnia">&times;</button>
                 </div>
                 <div class="modal-body">
                     <div class="tab-help" style="margin-bottom: 1rem;">
-                        💡 Your API collection exported as markdown. Copy and save it to a file.
+                        💡 Your API collection exported in Insomnia format. Copy or download.
                     </div>
-                    <textarea id="export-markdown-textarea" readonly></textarea>
+                    <pre id="insomnia-export-preview" style="background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow-x: auto; max-height: 400px; font-size: 0.875rem;"></pre>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn-primary" id="btn-copy-export">📋 Copy to Clipboard</button>
-                    <button class="btn-cancel" id="btn-close-export2">Close</button>
+                    <button class="btn-primary" id="btn-download-insomnia">💾 Download JSON</button>
+                    <button class="btn-primary" id="btn-copy-insomnia">📋 Copy</button>
+                    <button class="btn-cancel" id="btn-close-export-insomnia2">Close</button>
                 </div>
             </div>
         </div>
@@ -140,10 +154,18 @@
             </div>
         </div>
 
-        <!-- Main Content -->
-        <div class="main-content">
-            <!-- Request Editor -->
-            <div class="request-editor">
+        <!-- Request Editor -->
+        <div class="request-editor">
+                <div class="request-toolbar">
+                    <div class="request-toolbar-actions">
+                        <button class="btn-icon" id="btn-copy-url" title="Copy URL to clipboard">
+                            🔗 Copy URL
+                        </button>
+                        <button class="btn-icon btn-danger" id="btn-delete-request" title="Delete this request">
+                            🗑️ Delete
+                        </button>
+                    </div>
+                </div>
                 <div class="request-header">
                     <select class="select-method" id="select-method">
                         <option value="GET">GET</option>
@@ -313,10 +335,13 @@
                         <p class="history-empty">No history yet. Send a request to start tracking!</p>
                     </div>
                 </div>
-            </div>
+        </div>
 
-            <!-- Response Panel -->
-            <div class="response-panel hidden" id="response-panel">
+        <!-- Resizer -->
+        <div class="resizer" id="resizer"></div>
+
+        <!-- Response Panel -->
+        <div class="response-panel hidden" id="response-panel">
                 <div class="response-header-section">
                     <div class="response-header-title">
                         <h3>📤 Response</h3>
@@ -378,7 +403,6 @@
                         <p class="history-empty">No response history yet. Send a request to see responses!</p>
                     </div>
                 </div>
-            </div>
         </div>
     </div>
 

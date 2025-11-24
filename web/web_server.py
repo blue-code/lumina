@@ -8,6 +8,10 @@ import threading
 import os
 import sys
 import uuid
+import json
+import time
+from pathlib import Path
+from datetime import datetime, timedelta
 from typing import Dict
 
 # 상위 디렉토리를 Python 경로에 추가
@@ -22,7 +26,7 @@ from models.history_model import HistoryManager
 class LuminaWebServer:
     """Lumina 웹 서버 - 세션별 프로젝트 격리"""
 
-    def __init__(self, host='127.0.0.1', port=5000):
+    def __init__(self, host='127.0.0.1', port=15555):
         self.host = host
         self.port = port
         self.app = Flask(__name__,
@@ -36,6 +40,10 @@ class LuminaWebServer:
         self.app.config['SESSION_COOKIE_HTTPONLY'] = True
         self.app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
+        # 데이터 디렉토리 설정
+        self.data_dir = Path('.lumina_data')
+        self.data_dir.mkdir(exist_ok=True)
+
         # 세션별 프로젝트 매니저 저장소 (thread-safe)
         # 구조: {session_id: {project_id: ProjectManager}}
         self.sessions: Dict[str, Dict[str, ProjectManager]] = {}
@@ -48,6 +56,9 @@ class LuminaWebServer:
         # 구조: {session_id: {project_id: HistoryManager}}
         self.histories: Dict[str, Dict[str, HistoryManager]] = {}
 
+        # 세션 메타데이터 (마지막 접근 시간)
+        self.session_metadata: Dict[str, Dict] = {}
+
         # 레거시 지원: 데스크톱 앱과의 공유를 위한 기본 프로젝트 (옵션)
         self.project_manager = None  # Will be set by desktop app if needed
         self.http_client = None
@@ -57,8 +68,19 @@ class LuminaWebServer:
         self.server_thread = None
         self.is_running = False
 
+        # 자동 저장/정리 타이머
+        self.auto_save_timer = None
+        self.cleanup_timer = None
+
+        # 기존 세션 데이터 로드
+        self.load_all_sessions()
+
         # 라우트 설정
         self.setup_routes()
+
+        # 자동 저장 및 정리 시작
+        self.start_auto_save()
+        self.start_cleanup_timer()
 
     def get_session_project_manager(self) -> ProjectManager:
         """현재 세션의 활성 프로젝트 매니저 가져오기 (없으면 생성)"""
@@ -71,6 +93,9 @@ class LuminaWebServer:
             session['session_id'] = str(uuid.uuid4())
 
         session_id = session['session_id']
+
+        # 세션 접근 시간 업데이트
+        self.update_session_access_time(session_id)
 
         with self.sessions_lock:
             # 세션 초기화
@@ -128,6 +153,147 @@ class LuminaWebServer:
                 self.histories[session_id][active_project_id] = HistoryManager()
 
             return self.histories[session_id][active_project_id]
+
+    def save_session(self, session_id: str):
+        """세션 데이터를 파일로 저장"""
+        with self.sessions_lock:
+            if session_id not in self.sessions:
+                return
+
+            session_file = self.data_dir / f'session_{session_id}.json'
+
+            try:
+                # 세션 데이터 직렬화
+                session_data = {
+                    'session_id': session_id,
+                    'last_accessed': time.time(),
+                    'active_project_id': self.active_projects.get(session_id),
+                    'projects': {}
+                }
+
+                # 모든 프로젝트 저장
+                for project_id, pm in self.sessions[session_id].items():
+                    session_data['projects'][project_id] = pm.to_dict()
+
+                # 파일로 저장
+                with open(session_file, 'w', encoding='utf-8') as f:
+                    json.dump(session_data, f, indent=2, ensure_ascii=False)
+
+            except Exception as e:
+                print(f"Failed to save session {session_id}: {e}")
+
+    def load_session(self, session_id: str) -> bool:
+        """세션 데이터를 파일에서 로드"""
+        session_file = self.data_dir / f'session_{session_id}.json'
+
+        if not session_file.exists():
+            return False
+
+        try:
+            with open(session_file, 'r', encoding='utf-8') as f:
+                session_data = json.load(f)
+
+            with self.sessions_lock:
+                # 세션 초기화
+                if session_id not in self.sessions:
+                    self.sessions[session_id] = {}
+
+                # 프로젝트 복원
+                for project_id, project_data in session_data['projects'].items():
+                    pm = ProjectManager.from_dict(project_data)
+                    self.sessions[session_id][project_id] = pm
+
+                # 활성 프로젝트 설정
+                active_id = session_data.get('active_project_id')
+                if active_id and active_id in self.sessions[session_id]:
+                    self.active_projects[session_id] = active_id
+
+                # 메타데이터 저장
+                self.session_metadata[session_id] = {
+                    'last_accessed': session_data.get('last_accessed', time.time())
+                }
+
+            return True
+        except Exception as e:
+            print(f"Failed to load session {session_id}: {e}")
+            return False
+
+    def load_all_sessions(self):
+        """모든 저장된 세션 데이터 로드"""
+        if not self.data_dir.exists():
+            return
+
+        session_files = self.data_dir.glob('session_*.json')
+        loaded_count = 0
+
+        for session_file in session_files:
+            session_id = session_file.stem.replace('session_', '')
+            if self.load_session(session_id):
+                loaded_count += 1
+
+        if loaded_count > 0:
+            print(f"✨ Loaded {loaded_count} session(s) from disk")
+
+    def save_all_sessions(self):
+        """모든 세션 데이터 저장"""
+        with self.sessions_lock:
+            for session_id in list(self.sessions.keys()):
+                self.save_session(session_id)
+
+    def cleanup_old_sessions(self):
+        """30일 이상 미사용 세션 정리"""
+        cutoff_time = time.time() - (30 * 24 * 60 * 60)  # 30일
+
+        with self.sessions_lock:
+            sessions_to_remove = []
+
+            for session_id, metadata in self.session_metadata.items():
+                last_accessed = metadata.get('last_accessed', 0)
+                if last_accessed < cutoff_time:
+                    sessions_to_remove.append(session_id)
+
+            for session_id in sessions_to_remove:
+                # 메모리에서 제거
+                if session_id in self.sessions:
+                    del self.sessions[session_id]
+                if session_id in self.active_projects:
+                    del self.active_projects[session_id]
+                if session_id in self.histories:
+                    del self.histories[session_id]
+                if session_id in self.session_metadata:
+                    del self.session_metadata[session_id]
+
+                # 파일 삭제
+                session_file = self.data_dir / f'session_{session_id}.json'
+                if session_file.exists():
+                    session_file.unlink()
+
+            if sessions_to_remove:
+                print(f"🧹 Cleaned up {len(sessions_to_remove)} old session(s)")
+
+    def start_auto_save(self):
+        """자동 저장 타이머 시작 (30초마다)"""
+        def auto_save():
+            while self.is_running:
+                time.sleep(30)
+                self.save_all_sessions()
+
+        self.auto_save_timer = threading.Thread(target=auto_save, daemon=True)
+        self.auto_save_timer.start()
+
+    def start_cleanup_timer(self):
+        """세션 정리 타이머 시작 (1시간마다)"""
+        def cleanup():
+            while self.is_running:
+                time.sleep(3600)  # 1시간
+                self.cleanup_old_sessions()
+
+        self.cleanup_timer = threading.Thread(target=cleanup, daemon=True)
+        self.cleanup_timer.start()
+
+    def update_session_access_time(self, session_id: str):
+        """세션 마지막 접근 시간 업데이트"""
+        self.session_metadata.setdefault(session_id, {})['last_accessed'] = time.time()
 
     def setup_routes(self):
         """라우트 설정"""
@@ -333,19 +499,25 @@ class LuminaWebServer:
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
 
-        # API: 마크다운 임포트
-        @self.app.route('/api/import/markdown', methods=['POST'])
-        def import_markdown():
+        # API: Insomnia 임포트
+        @self.app.route('/api/import/insomnia', methods=['POST'])
+        def import_insomnia():
             pm = self.get_session_project_manager()
             data = request.json
-            markdown_content = data.get('content')
-            if not markdown_content:
-                return jsonify({'error': 'Markdown content required'}), 400
+            insomnia_data = data.get('data')
+            if not insomnia_data:
+                return jsonify({'error': 'Insomnia data required'}), 400
 
             try:
-                from utils.markdown_parser import MarkdownAPIParser
-                imported_folder = MarkdownAPIParser.parse_content(markdown_content)
+                from utils.insomnia_converter import InsomniaConverter
+                imported_folder = InsomniaConverter.import_from_insomnia(insomnia_data)
+
+                # 폴더 추가
                 pm.root_folder.add_folder(imported_folder)
+
+                # 모든 요청 개수 계산
+                all_requests = pm.get_all_requests()
+
                 return jsonify({
                     'success': True,
                     'imported_count': len(imported_folder.requests),
@@ -354,17 +526,17 @@ class LuminaWebServer:
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
 
-        # API: 마크다운 내보내기
-        @self.app.route('/api/export/markdown', methods=['GET'])
-        def export_markdown():
+        # API: Insomnia 내보내기
+        @self.app.route('/api/export/insomnia', methods=['GET'])
+        def export_insomnia():
             pm = self.get_session_project_manager()
             try:
-                from utils.markdown_parser import MarkdownAPIParser
-                markdown_content = MarkdownAPIParser.generate_markdown(pm.root_folder)
+                from utils.insomnia_converter import InsomniaConverter
+                insomnia_data = InsomniaConverter.export_to_insomnia(pm.root_folder)
                 return jsonify({
                     'success': True,
-                    'content': markdown_content,
-                    'request_count': len(pm.root_folder.requests)
+                    'data': insomnia_data,
+                    'request_count': len(pm.get_all_requests())
                 })
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
@@ -746,16 +918,25 @@ class LuminaWebServer:
 
     def stop(self):
         """서버 중지"""
+        print("Stopping Lumina Web Server...")
         self.is_running = False
+
+        # 모든 세션 데이터 저장
+        self.save_all_sessions()
+
         print("Lumina Web Server stopped")
 
 
 def main():
     """웹 서버 단독 실행"""
-    server = LuminaWebServer(host='0.0.0.0', port=5000)
+    server = LuminaWebServer(host='0.0.0.0', port=15555)
+    server.is_running = True  # 자동 저장/정리 스레드 활성화
     print(f"✨ Starting Lumina Web Server...")
-    print(f"Access at: http://localhost:5000")
-    server.app.run(host=server.host, port=server.port, debug=True)
+    print(f"Access at: http://localhost:15555")
+    try:
+        server.app.run(host=server.host, port=server.port, debug=True)
+    finally:
+        server.stop()
 
 
 if __name__ == '__main__':

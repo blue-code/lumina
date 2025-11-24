@@ -12,6 +12,7 @@ class LuminaApp {
         this.collapsedFolders = new Set();
         this.currentProject = null;
         this.projects = [];
+        this.isResizing = false;
         this.init();
     }
 
@@ -46,19 +47,38 @@ class LuminaApp {
             this.saveCurrentRequest();
         });
 
-        // Import/Export 버튼
-        document.getElementById('btn-import-md').addEventListener('click', () => this.showImportModal());
-        document.getElementById('btn-export-md').addEventListener('click', () => this.showExportModal());
+        // More Menu
+        document.getElementById('btn-more').addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleMoreMenu();
+        });
+        document.getElementById('menu-import-insomnia').addEventListener('click', () => this.showInsomniaImportModal());
+        document.getElementById('menu-export-insomnia').addEventListener('click', () => this.exportInsomnia());
+        document.getElementById('menu-clear-all').addEventListener('click', () => this.clearAllData());
 
-        // Import Modal
-        document.getElementById('btn-close-import').addEventListener('click', () => this.hideImportModal());
-        document.getElementById('btn-cancel-import').addEventListener('click', () => this.hideImportModal());
-        document.getElementById('btn-confirm-import').addEventListener('click', () => this.importMarkdown());
+        // Request Toolbar
+        document.getElementById('btn-copy-url').addEventListener('click', () => this.copyRequestUrl());
+        document.getElementById('btn-delete-request').addEventListener('click', () => this.deleteRequest());
 
-        // Export Modal
-        document.getElementById('btn-close-export').addEventListener('click', () => this.hideExportModal());
-        document.getElementById('btn-close-export2').addEventListener('click', () => this.hideExportModal());
-        document.getElementById('btn-copy-export').addEventListener('click', () => this.copyExportToClipboard());
+        // Insomnia Import Modal
+        document.getElementById('btn-close-insomnia-import').addEventListener('click', () => this.hideInsomniaImportModal());
+        document.getElementById('btn-cancel-insomnia-import').addEventListener('click', () => this.hideInsomniaImportModal());
+        document.getElementById('btn-confirm-insomnia-import').addEventListener('click', () => this.importInsomnia());
+
+        // Insomnia Export Modal
+        document.getElementById('btn-close-insomnia-export').addEventListener('click', () => this.hideInsomniaExportModal());
+        document.getElementById('btn-close-insomnia-export2').addEventListener('click', () => this.hideInsomniaExportModal());
+        document.getElementById('btn-download-insomnia').addEventListener('click', () => this.downloadInsomniaExport());
+        document.getElementById('btn-copy-insomnia').addEventListener('click', () => this.copyInsomniaExport());
+
+        // Click outside to close more menu
+        document.addEventListener('click', (e) => {
+            const moreMenu = document.getElementById('more-menu');
+            const moreBtn = document.getElementById('btn-more');
+            if (!moreMenu.contains(e.target) && !moreBtn.contains(e.target)) {
+                moreMenu.classList.add('hidden');
+            }
+        });
 
         // Project Management
         document.getElementById('project-dropdown').addEventListener('change', (e) => this.onProjectChange(e.target.value));
@@ -107,6 +127,54 @@ class LuminaApp {
 
         // Method 선택 변경
         document.getElementById('select-method').addEventListener('change', () => this.saveCurrentRequest());
+
+        // Resizer
+        this.setupResizer();
+    }
+
+    setupResizer() {
+        const resizer = document.getElementById('resizer');
+        const requestEditor = document.querySelector('.request-editor');
+        const responsePanel = document.querySelector('.response-panel');
+        const container = document.querySelector('.container');
+
+        let startX = 0;
+        let startWidth = 0;
+
+        resizer.addEventListener('mousedown', (e) => {
+            this.isResizing = true;
+            startX = e.clientX;
+            startWidth = requestEditor.offsetWidth;
+            resizer.classList.add('resizing');
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!this.isResizing) return;
+
+            const delta = e.clientX - startX;
+            const newWidth = startWidth + delta;
+            const containerWidth = container.offsetWidth;
+            const sidebarWidth = 320; // sidebar width
+            const resizerWidth = 5;
+            const minWidth = 400;
+            const maxWidth = containerWidth - sidebarWidth - resizerWidth - minWidth;
+
+            if (newWidth >= minWidth && newWidth <= maxWidth) {
+                requestEditor.style.flex = 'none';
+                requestEditor.style.width = newWidth + 'px';
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (this.isResizing) {
+                this.isResizing = false;
+                resizer.classList.remove('resizing');
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
+        });
     }
 
     async loadFolderTree() {
@@ -908,77 +976,219 @@ class LuminaApp {
         document.getElementById('response-panel').classList.remove('hidden');
     }
 
-    // Import/Export 기능
-    showImportModal() {
-        document.getElementById('import-modal').classList.add('active');
-        document.getElementById('import-markdown-textarea').value = '';
-        document.getElementById('import-markdown-textarea').focus();
+    // More Menu
+    toggleMoreMenu() {
+        const moreMenu = document.getElementById('more-menu');
+        moreMenu.classList.toggle('hidden');
     }
 
-    hideImportModal() {
-        document.getElementById('import-modal').classList.remove('active');
-    }
+    // Request Toolbar Actions
+    async copyRequestUrl() {
+        if (!this.currentRequest) {
+            alert('Please select a request first');
+            return;
+        }
 
-    async importMarkdown() {
-        const content = document.getElementById('import-markdown-textarea').value.trim();
-        if (!content) {
-            alert('Please paste markdown content');
+        const url = document.getElementById('input-url').value;
+        if (!url) {
+            alert('No URL to copy');
             return;
         }
 
         try {
-            const response = await fetch(`${API_BASE}/import/markdown`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content })
+            await navigator.clipboard.writeText(url);
+            alert('URL copied to clipboard!');
+        } catch (error) {
+            // Fallback for older browsers
+            const input = document.createElement('input');
+            input.value = url;
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('copy');
+            document.body.removeChild(input);
+            alert('URL copied to clipboard!');
+        }
+    }
+
+    async deleteRequest() {
+        if (!this.currentRequest) {
+            alert('Please select a request first');
+            return;
+        }
+
+        if (!confirm(`Delete request "${this.currentRequest.name}"? This cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/requests/${this.currentRequest.id}`, {
+                method: 'DELETE'
             });
 
             const result = await response.json();
 
             if (result.success) {
-                alert(`Successfully imported ${result.imported_count} requests from "${result.folder_name}"`);
-                this.hideImportModal();
-                await this.loadRequests();
+                this.currentRequest = null;
+                this.clearResponse();
+                await this.loadFolderTree();
+                alert('Request deleted successfully');
             } else {
-                alert(`Import failed: ${result.error}`);
+                alert(`Failed to delete request: ${result.error}`);
             }
         } catch (error) {
-            console.error('Failed to import markdown:', error);
-            alert(`Import failed: ${error.message}`);
+            console.error('Failed to delete request:', error);
+            alert('Failed to delete request');
         }
     }
 
-    async showExportModal() {
+    async clearAllData() {
+        if (!confirm('Clear ALL data? This will delete all requests and folders. This cannot be undone!')) {
+            return;
+        }
+
+        if (!confirm('Are you ABSOLUTELY sure? This action is irreversible!')) {
+            return;
+        }
+
         try {
-            const response = await fetch(`${API_BASE}/export/markdown`);
+            const response = await fetch(`${API_BASE}/clear-all`, {
+                method: 'POST'
+            });
+
             const result = await response.json();
 
             if (result.success) {
-                document.getElementById('export-markdown-textarea').value = result.content;
-                document.getElementById('export-modal').classList.add('active');
+                this.currentRequest = null;
+                this.currentFolder = null;
+                this.clearResponse();
+                await this.loadFolderTree();
+                document.getElementById('more-menu').classList.add('hidden');
+                alert('All data cleared successfully');
+            } else {
+                alert(`Failed to clear data: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Failed to clear data:', error);
+            alert('Failed to clear data');
+        }
+    }
+
+    // Insomnia Import/Export
+    showInsomniaImportModal() {
+        document.getElementById('insomnia-import-modal').classList.add('active');
+        document.getElementById('insomnia-import-file').value = '';
+        document.getElementById('more-menu').classList.add('hidden');
+    }
+
+    hideInsomniaImportModal() {
+        document.getElementById('insomnia-import-modal').classList.remove('active');
+    }
+
+    async importInsomnia() {
+        const fileInput = document.getElementById('insomnia-import-file');
+        if (!fileInput.files || fileInput.files.length === 0) {
+            alert('Please select an Insomnia export file (.json)');
+            return;
+        }
+
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+
+        reader.onload = async (e) => {
+            try {
+                const content = e.target.result;
+                const insomniaData = JSON.parse(content);
+
+                const response = await fetch(`${API_BASE}/import/insomnia`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(insomniaData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(`Successfully imported from Insomnia!\nFolder: ${result.folder_name}\nRequests: ${result.imported_count}`);
+                    this.hideInsomniaImportModal();
+                    await this.loadFolderTree();
+                } else {
+                    alert(`Import failed: ${result.error}`);
+                }
+            } catch (error) {
+                console.error('Failed to import Insomnia data:', error);
+                alert(`Import failed: ${error.message}`);
+            }
+        };
+
+        reader.readAsText(file);
+    }
+
+    async exportInsomnia() {
+        try {
+            const response = await fetch(`${API_BASE}/export/insomnia`);
+            const result = await response.json();
+
+            if (result.success) {
+                // Store export data and show modal
+                this.insomniaExportData = result.data;
+                document.getElementById('insomnia-export-preview').textContent =
+                    JSON.stringify(result.data, null, 2);
+                document.getElementById('insomnia-export-modal').classList.add('active');
+                document.getElementById('more-menu').classList.add('hidden');
             } else {
                 alert(`Export failed: ${result.error}`);
             }
         } catch (error) {
-            console.error('Failed to export markdown:', error);
+            console.error('Failed to export to Insomnia:', error);
             alert(`Export failed: ${error.message}`);
         }
     }
 
-    hideExportModal() {
-        document.getElementById('export-modal').classList.remove('active');
+    hideInsomniaExportModal() {
+        document.getElementById('insomnia-export-modal').classList.remove('active');
     }
 
-    async copyExportToClipboard() {
-        const textarea = document.getElementById('export-markdown-textarea');
+    downloadInsomniaExport() {
+        if (!this.insomniaExportData) {
+            alert('No export data available');
+            return;
+        }
+
+        const dataStr = JSON.stringify(this.insomniaExportData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'lumina-export-insomnia.json';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        alert('Insomnia export file downloaded!');
+        this.hideInsomniaExportModal();
+    }
+
+    async copyInsomniaExport() {
+        if (!this.insomniaExportData) {
+            alert('No export data available');
+            return;
+        }
+
+        const dataStr = JSON.stringify(this.insomniaExportData, null, 2);
+
         try {
-            await navigator.clipboard.writeText(textarea.value);
-            alert('Markdown copied to clipboard!');
+            await navigator.clipboard.writeText(dataStr);
+            alert('Insomnia export copied to clipboard!');
         } catch (error) {
             // Fallback for older browsers
+            const textarea = document.createElement('textarea');
+            textarea.value = dataStr;
+            document.body.appendChild(textarea);
             textarea.select();
             document.execCommand('copy');
-            alert('Markdown copied to clipboard!');
+            document.body.removeChild(textarea);
+            alert('Insomnia export copied to clipboard!');
         }
     }
 
