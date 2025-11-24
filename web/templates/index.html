@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lumina ✨ - Web Interface</title>
+    <title>Lumina ✨ - Cosmic Interface</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
@@ -12,18 +15,20 @@
         <div class="header-content">
             <div class="header-title">
                 <h1>✨ Lumina</h1>
-                <p>Elegant REST API Client - Web Interface</p>
+                <p>Cosmic API Client</p>
             </div>
             <div class="header-actions">
                 <div class="project-selector">
-                    <label for="project-dropdown">📁 Project:</label>
+                    <label for="project-dropdown" style="font-size: 0.8rem; color: var(--text-muted);">PROJECT:</label>
                     <select id="project-dropdown" class="project-dropdown">
                         <option value="">Loading...</option>
                     </select>
-                    <button class="btn-new-project" id="btn-new-project" title="Create new project">➕</button>
-                    <button class="btn-manage-projects" id="btn-manage-projects" title="Manage projects">⚙️</button>
+                    <button class="btn-icon" id="btn-new-project" title="Create new project">➕</button>
+                    <button class="btn-icon" id="btn-manage-projects" title="Manage projects">⚙️</button>
                 </div>
-                <a href="/docs" class="header-link" target="_blank">📚 API Docs</a>
+                <a href="/docs" class="header-link" target="_blank">
+                    <span>📚</span> API Docs
+                </a>
             </div>
         </div>
     </div>
@@ -33,18 +38,29 @@
         <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
-                <h3>📂 Requests</h3>
-                <div class="sidebar-help">
-                    💡 Right-click for options
+                <h3>Explorer</h3>
+                <div class="sidebar-actions-row">
+                    <button class="btn-neon" id="btn-new-request" style="flex: 1;">
+                        + New Request
+                    </button>
                 </div>
             </div>
+            
             <div class="sidebar-actions">
                 <div class="sidebar-actions-row">
-                    <button class="btn-new-compact" id="btn-new-request" title="Create a new request">
-                        ➕ New
-                    </button>
-                    <button class="btn-new-compact" id="btn-new-folder" title="Create a new folder">
+                    <button class="btn-glass" id="btn-new-folder" title="New Folder" style="flex: 1;">
                         📁 Folder
+                    </button>
+                    <button class="btn-glass" id="btn-import-md" title="Import" style="flex: 1;">
+                        📥 Import
+                    </button>
+                </div>
+                <div class="sidebar-actions-row">
+                    <button class="btn-glass" id="btn-share-project" title="Share" style="flex: 1;">
+                        🔗 Share
+                    </button>
+                    <button class="btn-glass" id="btn-global-constants" title="Globals" style="flex: 1;">
+                        🌐 Globals
                     </button>
                     <button class="btn-more" id="btn-more" title="More options">
                         ⋮
@@ -64,6 +80,7 @@
                     🗑️ Clear All Data
                 </div>
             </div>
+
             <div class="folder-tree" id="folder-tree">
                 <!-- Folder tree will be loaded here -->
             </div>
@@ -113,47 +130,6 @@
             </div>
         </div>
 
-        <!-- New Project Modal -->
-        <div class="modal" id="new-project-modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>➕ Create New Project</h3>
-                    <button class="modal-close" id="btn-close-new-project">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="new-project-name">Project Name:</label>
-                        <input type="text" id="new-project-name" placeholder="Enter project name..." class="input-url">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn-cancel" id="btn-cancel-new-project">Cancel</button>
-                    <button class="btn-primary" id="btn-confirm-new-project">Create</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Manage Projects Modal -->
-        <div class="modal" id="manage-projects-modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>⚙️ Manage Projects</h3>
-                    <button class="modal-close" id="btn-close-manage-projects">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="tab-help" style="margin-bottom: 1rem;">
-                        💡 Manage your projects. Double-click a project name to rename it.
-                    </div>
-                    <div class="projects-list" id="projects-list">
-                        <!-- Projects will be loaded here -->
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn-cancel" id="btn-close-manage-projects2">Close</button>
-                </div>
-            </div>
-        </div>
-
         <!-- Request Editor -->
         <div class="request-editor">
                 <div class="request-toolbar">
@@ -176,37 +152,21 @@
                         <option value="HEAD">HEAD</option>
                         <option value="OPTIONS">OPTIONS</option>
                     </select>
-                    <input type="text" class="input-url" id="input-url" placeholder="Enter request URL (e.g., https://api.example.com/users)">
-                    <button class="btn-send" id="btn-send">Send</button>
+                    <input type="text" class="input-url" id="input-url" placeholder="https://api.example.com/v1/endpoint">
+                    <button class="btn-send" id="btn-send">Send 🚀</button>
                 </div>
 
                 <!-- Tabs -->
                 <div class="tabs">
-                    <button class="tab active" data-tab="params" title="Add URL query parameters">
-                        <span class="tab-icon">🔗</span> Params
-                    </button>
-                    <button class="tab" data-tab="headers" title="Add HTTP headers">
-                        <span class="tab-icon">📋</span> Headers
-                    </button>
-                    <button class="tab" data-tab="body" title="Set request body (JSON, XML, etc.)">
-                        <span class="tab-icon">📝</span> Body
-                    </button>
-                    <button class="tab" data-tab="auth" title="Configure authentication">
-                        <span class="tab-icon">🔐</span> Auth
-                    </button>
-                    <button class="tab" data-tab="docs" title="API Documentation (Markdown)">
-                        <span class="tab-icon">📖</span> Docs
-                    </button>
-                    <button class="tab" data-tab="history-input" title="View request history">
-                        <span class="tab-icon">⏱️</span> History
-                    </button>
+                    <button class="tab active" data-tab="params">Parameters</button>
+                    <button class="tab" data-tab="headers">Headers</button>
+                    <button class="tab" data-tab="body">Body</button>
+                    <button class="tab" data-tab="auth">Auth</button>
+                    <button class="tab" data-tab="docs">Docs</button>
                 </div>
 
                 <!-- Tab Contents -->
                 <div class="tab-content active" id="tab-params">
-                    <div class="tab-help">
-                        🔗 <strong>Query Parameters:</strong> Add URL parameters (e.g., page=1, limit=10)
-                    </div>
                     <table class="key-value-table">
                         <thead>
                             <tr>
@@ -222,9 +182,6 @@
                 </div>
 
                 <div class="tab-content" id="tab-headers">
-                    <div class="tab-help">
-                        📋 <strong>Headers:</strong> Add HTTP headers (e.g., Content-Type, Authorization)
-                    </div>
                     <table class="key-value-table">
                         <thead>
                             <tr>
@@ -240,76 +197,55 @@
                 </div>
 
                 <div class="tab-content" id="tab-body">
-                    <div class="tab-help">
-                        📝 <strong>Request Body:</strong> Add data to send with your request (for POST, PUT, PATCH)
-                    </div>
-                    <div class="body-actions">
-                        <button class="btn-beautify" id="btn-beautify-json" title="Format JSON">
+                    <div class="body-actions" style="margin-bottom: 1rem;">
+                        <button class="btn-glass" id="btn-beautify-json">
                             ✨ Beautify JSON
                         </button>
                     </div>
-                    <textarea id="body-raw" placeholder="Enter raw body (JSON, XML, text, etc.)&#10;&#10;Example JSON:&#10;{&#10;  &quot;name&quot;: &quot;John Doe&quot;,&#10;  &quot;email&quot;: &quot;john@example.com&quot;&#10;}"></textarea>
+                    <textarea id="body-raw" placeholder="{
+  &quot;key&quot;: &quot;value&quot;
+}"></textarea>
                 </div>
 
                 <div class="tab-content" id="tab-auth">
-                    <div class="tab-help">
-                        💡 <strong>Authentication:</strong> Add credentials to access protected APIs
-                    </div>
-                    <div class="auth-container">
-                        <div class="form-group">
-                            <label for="auth-type">Auth Type:</label>
-                            <select id="auth-type" class="auth-select">
-                                <option value="none">🚫 No Auth (Public API)</option>
-                                <option value="basic">👤 Basic Auth (Username & Password)</option>
-                                <option value="bearer">🎫 Bearer Token (JWT, OAuth)</option>
-                                <option value="apikey">🔑 API Key (Custom Key)</option>
+                    <div class="auth-container" style="max-width: 600px;">
+                        <div class="form-group" style="margin-bottom: 1rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted);">Auth Type</label>
+                            <select id="auth-type" class="select-method" style="width: 100%; text-align: left;">
+                                <option value="none">No Auth</option>
+                                <option value="basic">Basic Auth</option>
+                                <option value="bearer">Bearer Token</option>
+                                <option value="apikey">API Key</option>
                             </select>
                         </div>
 
-                        <!-- Basic Auth -->
+                        <!-- Auth Fields (Hidden by default) -->
                         <div id="auth-basic" class="auth-section hidden">
-                            <div class="auth-example">
-                                <strong>Example:</strong> Used for simple HTTP authentication
+                            <div class="form-group mb-1">
+                                <input type="text" id="auth-basic-username" placeholder="Username" class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
                             </div>
                             <div class="form-group">
-                                <label>👤 Username:</label>
-                                <input type="text" id="auth-basic-username" placeholder="e.g., admin">
-                            </div>
-                            <div class="form-group">
-                                <label>🔒 Password:</label>
-                                <input type="password" id="auth-basic-password" placeholder="Your password">
+                                <input type="password" id="auth-basic-password" placeholder="Password" class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
                             </div>
                         </div>
 
-                        <!-- Bearer Token -->
                         <div id="auth-bearer" class="auth-section hidden">
-                            <div class="auth-example">
-                                <strong>Example:</strong> Common for JWT tokens and OAuth 2.0
-                            </div>
                             <div class="form-group">
-                                <label>🎫 Token:</label>
-                                <input type="text" id="auth-bearer-token" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+                                <input type="text" id="auth-bearer-token" placeholder="Bearer Token" class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
                             </div>
                         </div>
 
-                        <!-- API Key -->
                         <div id="auth-apikey" class="auth-section hidden">
-                            <div class="auth-example">
-                                <strong>Example:</strong> Custom API key for third-party services
+                            <div class="form-group mb-1">
+                                <input type="text" id="auth-apikey-name" placeholder="Key Name (e.g. X-API-Key)" class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+                            </div>
+                            <div class="form-group mb-1">
+                                <input type="text" id="auth-apikey-value" placeholder="Key Value" class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
                             </div>
                             <div class="form-group">
-                                <label>🔑 Key Name:</label>
-                                <input type="text" id="auth-apikey-name" placeholder="e.g., X-API-Key or api_key">
-                            </div>
-                            <div class="form-group">
-                                <label>💎 Key Value:</label>
-                                <input type="text" id="auth-apikey-value" placeholder="Your API key value">
-                            </div>
-                            <div class="form-group">
-                                <label>📍 Add to:</label>
-                                <select id="auth-apikey-location">
-                                    <option value="header">Header (Recommended)</option>
-                                    <option value="query">Query Parameter</option>
+                                <select id="auth-apikey-location" class="select-method" style="width: 100%; text-align: left;">
+                                    <option value="header">Header</option>
+                                    <option value="query">Query Params</option>
                                 </select>
                             </div>
                         </div>
@@ -317,23 +253,11 @@
                 </div>
 
                 <div class="tab-content" id="tab-docs">
-                    <div class="tab-help">
-                        📖 <strong>API Documentation:</strong> Write API specifications in Markdown format
+                    <div class="docs-preview-toggle" style="margin-bottom: 1rem;">
+                        <button class="btn-glass" id="btn-toggle-preview">👁️ Toggle Preview</button>
                     </div>
-                    <div class="docs-preview-toggle">
-                        <button class="btn-toggle-preview" id="btn-toggle-preview">👁️ Toggle Preview</button>
-                    </div>
-                    <textarea id="docs-markdown" placeholder="# API Documentation&#10;&#10;## Description&#10;Brief description of this API endpoint.&#10;&#10;## Parameters&#10;- `param1`: Description&#10;- `param2`: Description&#10;&#10;## Example Response&#10;```json&#10;{&#10;  &quot;status&quot;: &quot;success&quot;&#10;}&#10;```"></textarea>
-                    <div id="docs-preview" class="docs-preview hidden"></div>
-                </div>
-
-                <div class="tab-content" id="tab-history-input">
-                    <div class="tab-help">
-                        ⏱️ <strong>Request History:</strong> Previously sent requests for this endpoint
-                    </div>
-                    <div class="history-input-list" id="history-input-list">
-                        <p class="history-empty">No history yet. Send a request to start tracking!</p>
-                    </div>
+                    <textarea id="docs-markdown" placeholder="# API Documentation"></textarea>
+                    <div id="docs-preview" class="docs-preview hidden" style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;"></div>
                 </div>
         </div>
 
@@ -343,66 +267,129 @@
         <!-- Response Panel -->
         <div class="response-panel hidden" id="response-panel">
                 <div class="response-header-section">
-                    <div class="response-header-title">
-                        <h3>📤 Response</h3>
-                        <div class="response-header-actions">
-                            <button class="btn-clear-response" id="btn-clear-response" title="Clear response">
-                                🗑️ Clear
-                            </button>
-                        </div>
+                    <div class="response-header-title" style="display: flex; align-items: center; gap: 1rem;">
+                        <h3 style="margin: 0;">Response</h3>
+                        <div class="response-status" id="response-status"></div>
+                        <div class="response-meta" id="response-meta"></div>
                     </div>
-                    <div class="response-status-bar">
-                        <div class="response-status" id="response-status">200 OK</div>
-                        <div class="response-meta" id="response-meta">Time: 123 ms | Size: 456 bytes</div>
+                    <div class="response-header-actions">
+                        <button class="btn-icon" id="btn-clear-response" title="Clear">🗑️</button>
                     </div>
                 </div>
 
-                <!-- Response Tabs -->
-                <div class="response-tabs">
-                    <button class="response-tab active" data-tab="response" title="View response body">
-                        <span class="tab-icon">📋</span> Body
-                    </button>
-                    <button class="response-tab" data-tab="response-headers" title="View response headers">
-                        <span class="tab-icon">📑</span> Headers
-                    </button>
-                    <button class="response-tab" data-tab="history-output" title="View response history">
-                        <span class="tab-icon">📊</span> History
-                    </button>
+                <div class="response-body">
+                    <pre id="response-body"></pre>
                 </div>
+            </div>
+        </div>
+    </div>
 
-                <!-- Response Body Tab -->
-                <div class="response-tab-content active" id="response-tab-response">
-                    <div class="response-body">
-                        <pre id="response-body"></pre>
-                    </div>
+    <!-- Modals -->
+    <!-- New Project Modal -->
+    <div class="modal" id="new-project-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>➕ Create New Project</h3>
+                <button class="modal-close" id="btn-close-new-project">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="new-project-name">Project Name:</label>
+                    <input type="text" id="new-project-name" placeholder="Enter project name..." class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px;">
                 </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="btn-cancel-new-project">Cancel</button>
+                <button class="btn-primary" id="btn-confirm-new-project">Create</button>
+            </div>
+        </div>
+    </div>
 
-                <!-- Response Headers Tab -->
-                <div class="response-tab-content" id="response-tab-response-headers">
-                    <div class="response-headers-content">
-                        <table class="response-headers-table" id="response-headers-table">
-                            <thead>
-                                <tr>
-                                    <th>Header Name</th>
-                                    <th>Value</th>
-                                </tr>
-                            </thead>
-                            <tbody id="response-headers-tbody">
-                                <tr><td colspan="2">No headers to display</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
+    <!-- Manage Projects Modal -->
+    <div class="modal" id="manage-projects-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚙️ Manage Projects</h3>
+                <button class="modal-close" id="btn-close-manage-projects">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="tab-help" style="margin-bottom: 1rem;">
+                    💡 Manage your projects. Double-click a project name to rename it.
                 </div>
+                <div class="projects-list" id="projects-list">
+                    <!-- Projects will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="btn-close-manage-projects2">Close</button>
+            </div>
+        </div>
+    </div>
 
-                <!-- History Output Tab -->
-                <div class="response-tab-content" id="response-tab-history-output">
-                    <div class="tab-help">
-                        📊 <strong>Response History:</strong> Click any item to view that response
-                    </div>
-                    <div class="history-list" id="history-output-list">
-                        <p class="history-empty">No response history yet. Send a request to see responses!</p>
-                    </div>
+    <!-- Import Modal -->
+    <div class="modal" id="import-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Import Markdown</h3>
+                <button class="modal-close" id="btn-close-import">&times;</button>
+            </div>
+            <div class="modal-body">
+                <textarea id="import-markdown-textarea" placeholder="Paste Markdown here..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="btn-cancel-import">Cancel</button>
+                <button class="btn-primary" id="btn-confirm-import">Import</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div class="modal" id="share-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Share Project</h3>
+                <button class="modal-close" id="btn-close-share">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted);">Expires In:</label>
+                    <select id="share-expires" class="select-method" style="width: 100%; text-align: left;">
+                        <option value="">Never</option>
+                        <option value="24">24 Hours</option>
+                        <option value="168">7 Days</option>
+                    </select>
                 </div>
+                <button class="btn-primary" id="btn-create-share" style="width: 100%;">Generate Link</button>
+                <div id="share-url-container" style="display: none; margin-top: 1rem;">
+                    <input type="text" id="share-url-input" readonly class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Constants Modal -->
+    <div class="modal" id="global-constants-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Global Constants</h3>
+                <button class="modal-close" id="btn-close-global-constants">&times;</button>
+            </div>
+            <div class="modal-body">
+                <table class="key-value-table">
+                    <thead>
+                        <tr>
+                            <th>Key</th>
+                            <th>Value</th>
+                            <th width="40"><button class="btn-icon" id="btn-add-global-constant">+</button></th>
+                        </tr>
+                    </thead>
+                    <tbody id="global-constants-tbody"></tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="btn-cancel-global-constants">Cancel</button>
+                <button class="btn-primary" id="btn-save-global-constants">Save</button>
+            </div>
         </div>
     </div>
 

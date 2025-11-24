@@ -1,111 +1,131 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>API Documentation - Lumina</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        .docs-container {
-            max-width: 1200px;
-            margin: 2rem auto;
+        body {
             padding: 2rem;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow-y: auto;
         }
-        .docs-header {
-            border-bottom: 3px solid #667eea;
-            padding-bottom: 1rem;
-            margin-bottom: 2rem;
+
+        .docs-container {
+            max-width: 1000px;
+            margin: 0 auto;
         }
-        .docs-header h1 {
-            color: #667eea;
-            margin: 0;
-        }
-        .docs-section {
-            margin-bottom: 3rem;
-        }
+
         .docs-section h2 {
-            color: #333;
-            border-left: 4px solid #667eea;
-            padding-left: 1rem;
-            margin-bottom: 1rem;
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
         }
+
         .endpoint {
-            background: #f9f9f9;
-            border: 1px solid #e0e0e0;
-            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
             padding: 1.5rem;
             margin-bottom: 1.5rem;
+            transition: transform 0.2s;
         }
+
+        .endpoint:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
         .endpoint-header {
             display: flex;
             align-items: center;
             gap: 1rem;
             margin-bottom: 1rem;
+            flex-wrap: wrap;
         }
-        .method-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 4px;
-            font-weight: 600;
-            font-size: 0.875rem;
-        }
-        .method-get { background: #4CAF50; color: white; }
-        .method-post { background: #2196F3; color: white; }
-        .method-put { background: #FF9800; color: white; }
-        .method-delete { background: #f44336; color: white; }
+
         .endpoint-path {
-            font-family: 'Monaco', 'Courier New', monospace;
-            font-size: 0.9rem;
-            color: #666;
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            color: var(--text-main);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.3rem 0.8rem;
+            border-radius: 6px;
         }
+
         .endpoint-description {
             margin-bottom: 1rem;
-            color: #555;
+            color: var(--text-muted);
         }
+
         .code-block {
-            background: #2d2d2d;
-            color: #f8f8f2;
+            background: rgba(0, 0, 0, 0.4);
+            color: #d4d4d4;
             padding: 1rem;
-            border-radius: 4px;
+            border-radius: 8px;
             overflow-x: auto;
-            font-family: 'Monaco', 'Courier New', monospace;
-            font-size: 0.875rem;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            border: 1px solid var(--glass-border);
+            margin-top: 0.5rem;
         }
+
         .back-link {
-            display: inline-block;
-            margin-bottom: 1rem;
-            color: #667eea;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            color: var(--text-muted);
             text-decoration: none;
+            transition: color 0.2s;
         }
+
         .back-link:hover {
-            text-decoration: underline;
+            color: var(--primary-color);
         }
+
         .params-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 0.5rem;
         }
+
         .params-table th,
         .params-table td {
             text-align: left;
-            padding: 0.5rem;
-            border: 1px solid #e0e0e0;
+            padding: 0.8rem;
+            border-bottom: 1px solid var(--glass-border);
+            color: var(--text-muted);
         }
+
         .params-table th {
-            background: #f0f0f0;
+            color: var(--primary-color);
             font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
         }
     </style>
 </head>
-<body style="background: #f5f5f5;">
+
+<body>
     <div class="docs-container">
-        <a href="/" class="back-link">← Back to App</a>
+        <a href="/" class="back-link">
+            <span>←</span> Back to App
+        </a>
 
         <div class="docs-header">
-            <h1>✨ Lumina API Documentation</h1>
-            <p>RESTful API endpoints for managing requests, executing HTTP calls, and viewing history</p>
+            <h1>Lumina API Documentation</h1>
+            <p style="color: var(--text-muted);">RESTful API endpoints for managing requests, executing HTTP calls, and
+                viewing history</p>
         </div>
 
         <!-- Project Management -->
@@ -114,11 +134,11 @@
 
             <div class="endpoint">
                 <div class="endpoint-header">
-                    <span class="method-badge method-get">GET</span>
+                    <span class="request-method method-GET">GET</span>
                     <span class="endpoint-path">/api/project</span>
                 </div>
                 <div class="endpoint-description">Get current project information</div>
-                <strong>Response:</strong>
+                <strong style="color: var(--primary-color);">Response:</strong>
                 <pre class="code-block">{
   "name": "Sample API Project",
   "folder": {
@@ -131,11 +151,11 @@
 
             <div class="endpoint">
                 <div class="endpoint-header">
-                    <span class="method-badge method-post">POST</span>
+                    <span class="request-method method-POST">POST</span>
                     <span class="endpoint-path">/api/project/save</span>
                 </div>
                 <div class="endpoint-description">Save project to file</div>
-                <strong>Request Body:</strong>
+                <strong style="color: var(--primary-color);">Request Body:</strong>
                 <pre class="code-block">{
   "file_path": "my_project.json"
 }</pre>
@@ -143,11 +163,11 @@
 
             <div class="endpoint">
                 <div class="endpoint-header">
-                    <span class="method-badge method-post">POST</span>
+                    <span class="request-method method-POST">POST</span>
                     <span class="endpoint-path">/api/project/load</span>
                 </div>
                 <div class="endpoint-description">Load project from file</div>
-                <strong>Request Body:</strong>
+                <strong style="color: var(--primary-color);">Request Body:</strong>
                 <pre class="code-block">{
   "file_path": "my_project.json"
 }</pre>
@@ -160,11 +180,11 @@
 
             <div class="endpoint">
                 <div class="endpoint-header">
-                    <span class="method-badge method-get">GET</span>
+                    <span class="request-method method-GET">GET</span>
                     <span class="endpoint-path">/api/requests</span>
                 </div>
                 <div class="endpoint-description">Get all requests</div>
-                <strong>Response:</strong>
+                <strong style="color: var(--primary-color);">Response:</strong>
                 <pre class="code-block">[
   {
     "id": "...",
@@ -179,7 +199,7 @@
 
             <div class="endpoint">
                 <div class="endpoint-header">
-                    <span class="method-badge method-get">GET</span>
+                    <span class="request-method method-GET">GET</span>
                     <span class="endpoint-path">/api/requests/{request_id}</span>
                 </div>
                 <div class="endpoint-description">Get specific request by ID</div>
@@ -187,11 +207,11 @@
 
             <div class="endpoint">
                 <div class="endpoint-header">
-                    <span class="method-badge method-post">POST</span>
+                    <span class="request-method method-POST">POST</span>
                     <span class="endpoint-path">/api/requests</span>
                 </div>
                 <div class="endpoint-description">Create new request</div>
-                <strong>Request Body:</strong>
+                <strong style="color: var(--primary-color);">Request Body:</strong>
                 <pre class="code-block">{
   "name": "New Request",
   "url": "https://api.example.com/endpoint",
@@ -201,11 +221,11 @@
 
             <div class="endpoint">
                 <div class="endpoint-header">
-                    <span class="method-badge method-put">PUT</span>
+                    <span class="request-method method-PUT">PUT</span>
                     <span class="endpoint-path">/api/requests/{request_id}</span>
                 </div>
                 <div class="endpoint-description">Update request</div>
-                <strong>Request Body:</strong>
+                <strong style="color: var(--primary-color);">Request Body:</strong>
                 <pre class="code-block">{
   "name": "Updated Name",
   "url": "https://api.example.com/new-endpoint",
@@ -220,7 +240,7 @@
 
             <div class="endpoint">
                 <div class="endpoint-header">
-                    <span class="method-badge method-delete">DELETE</span>
+                    <span class="request-method method-DELETE">DELETE</span>
                     <span class="endpoint-path">/api/requests/{request_id}</span>
                 </div>
                 <div class="endpoint-description">Delete request</div>
@@ -228,11 +248,11 @@
 
             <div class="endpoint">
                 <div class="endpoint-header">
-                    <span class="method-badge method-post">POST</span>
+                    <span class="request-method method-POST">POST</span>
                     <span class="endpoint-path">/api/requests/{request_id}/execute</span>
                 </div>
                 <div class="endpoint-description">Execute HTTP request and save to history</div>
-                <strong>Response:</strong>
+                <strong style="color: var(--primary-color);">Response:</strong>
                 <pre class="code-block">{
   "status_code": 200,
   "status_text": "OK",
@@ -251,11 +271,11 @@
 
             <div class="endpoint">
                 <div class="endpoint-header">
-                    <span class="method-badge method-get">GET</span>
+                    <span class="request-method method-GET">GET</span>
                     <span class="endpoint-path">/api/history/{request_id}</span>
                 </div>
                 <div class="endpoint-description">Get history for specific request</div>
-                <strong>Query Parameters:</strong>
+                <strong style="color: var(--primary-color);">Query Parameters:</strong>
                 <table class="params-table">
                     <tr>
                         <th>Parameter</th>
@@ -272,7 +292,7 @@
 
             <div class="endpoint">
                 <div class="endpoint-header">
-                    <span class="method-badge method-get">GET</span>
+                    <span class="request-method method-GET">GET</span>
                     <span class="endpoint-path">/api/history</span>
                 </div>
                 <div class="endpoint-description">Get all history entries</div>
@@ -280,7 +300,7 @@
 
             <div class="endpoint">
                 <div class="endpoint-header">
-                    <span class="method-badge method-delete">DELETE</span>
+                    <span class="request-method method-DELETE">DELETE</span>
                     <span class="endpoint-path">/api/history/{request_id}</span>
                 </div>
                 <div class="endpoint-description">Clear history for specific request</div>
@@ -288,7 +308,7 @@
 
             <div class="endpoint">
                 <div class="endpoint-header">
-                    <span class="method-badge method-delete">DELETE</span>
+                    <span class="request-method method-DELETE">DELETE</span>
                     <span class="endpoint-path">/api/history</span>
                 </div>
                 <div class="endpoint-description">Clear all history</div>
@@ -301,11 +321,11 @@
 
             <div class="endpoint">
                 <div class="endpoint-header">
-                    <span class="method-badge method-post">POST</span>
+                    <span class="request-method method-POST">POST</span>
                     <span class="endpoint-path">/api/import/markdown</span>
                 </div>
                 <div class="endpoint-description">Import API collection from markdown</div>
-                <strong>Request Body:</strong>
+                <strong style="color: var(--primary-color);">Request Body:</strong>
                 <pre class="code-block">{
   "content": "# API Collection\n\n## Request Name\n..."
 }</pre>
@@ -313,11 +333,11 @@
 
             <div class="endpoint">
                 <div class="endpoint-header">
-                    <span class="method-badge method-get">GET</span>
+                    <span class="request-method method-GET">GET</span>
                     <span class="endpoint-path">/api/export/markdown</span>
                 </div>
                 <div class="endpoint-description">Export all requests as markdown</div>
-                <strong>Response:</strong>
+                <strong style="color: var(--primary-color);">Response:</strong>
                 <pre class="code-block">{
   "success": true,
   "content": "# Project Name\n\n## Request...",
@@ -329,17 +349,18 @@
         <!-- Authentication -->
         <div class="docs-section">
             <h2>Authentication Types</h2>
-            <p>Lumina supports multiple authentication methods:</p>
+            <p style="color: var(--text-muted); margin-bottom: 1rem;">Lumina supports multiple authentication methods:
+            </p>
 
             <div class="endpoint">
-                <strong>No Auth</strong>
+                <strong style="color: var(--text-main);">No Auth</strong>
                 <pre class="code-block">{
   "auth_type": "none"
 }</pre>
             </div>
 
             <div class="endpoint">
-                <strong>Basic Auth</strong>
+                <strong style="color: var(--text-main);">Basic Auth</strong>
                 <pre class="code-block">{
   "auth_type": "basic",
   "auth_basic_username": "user",
@@ -348,7 +369,7 @@
             </div>
 
             <div class="endpoint">
-                <strong>Bearer Token</strong>
+                <strong style="color: var(--text-main);">Bearer Token</strong>
                 <pre class="code-block">{
   "auth_type": "bearer",
   "auth_bearer_token": "your-jwt-token-here"
@@ -356,7 +377,7 @@
             </div>
 
             <div class="endpoint">
-                <strong>API Key</strong>
+                <strong style="color: var(--text-main);">API Key</strong>
                 <pre class="code-block">{
   "auth_type": "apikey",
   "auth_api_key_name": "X-API-Key",
@@ -372,7 +393,7 @@
 
             <div class="endpoint">
                 <div class="endpoint-header">
-                    <span class="method-badge method-get">GET</span>
+                    <span class="request-method method-GET">GET</span>
                     <span class="endpoint-path">/api/environments</span>
                 </div>
                 <div class="endpoint-description">Get all environments</div>
@@ -380,7 +401,7 @@
 
             <div class="endpoint">
                 <div class="endpoint-header">
-                    <span class="method-badge method-get">GET</span>
+                    <span class="request-method method-GET">GET</span>
                     <span class="endpoint-path">/api/environments/active</span>
                 </div>
                 <div class="endpoint-description">Get active environment</div>
@@ -388,11 +409,11 @@
 
             <div class="endpoint">
                 <div class="endpoint-header">
-                    <span class="method-badge method-post">POST</span>
+                    <span class="request-method method-POST">POST</span>
                     <span class="endpoint-path">/api/environments/active</span>
                 </div>
                 <div class="endpoint-description">Set active environment</div>
-                <strong>Request Body:</strong>
+                <strong style="color: var(--primary-color);">Request Body:</strong>
                 <pre class="code-block">{
   "environment_id": "environment-uuid-here"
 }</pre>
@@ -400,4 +421,5 @@
         </div>
     </div>
 </body>
+
 </html>

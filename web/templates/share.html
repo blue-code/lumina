@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shared Project - Lumina</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: var(--bg-deep);
+        }
+
+        .share-card {
+            width: 100%;
+            max-width: 500px;
+            padding: 2.5rem;
+            background: rgba(20, 20, 30, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .share-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            display: inline-block;
+            filter: drop-shadow(0 0 10px var(--primary-glow));
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #fff 0%, var(--primary-color) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .project-info {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--glass-border);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.8rem 0;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .info-value {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .btn-full {
+            width: 100%;
+            padding: 0.8rem;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            color: var(--text-muted);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--text-main);
+            color: var(--text-main);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .expired {
+            color: var(--status-error);
+            font-weight: 600;
+        }
+
+        .error-msg {
+            color: var(--status-error);
+            background: rgba(255, 51, 102, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255, 51, 102, 0.3);
+        }
+
+        .success-msg {
+            color: var(--status-success);
+            background: rgba(0, 255, 157, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(0, 255, 157, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="share-card">
+        <div class="share-icon">✨</div>
+        <h1>Lumina Share</h1>
+        <p class="subtitle">Import a shared project into your workspace</p>
+
+        <div id="loading">
+            <div class="spinner"></div>
+            <p style="color: var(--text-muted);">Loading project details...</p>
+        </div>
+
+        <div id="error" style="display: none;" class="error-msg"></div>
+        <div id="success" style="display: none;" class="success-msg"></div>
+
+        <div id="content" style="display: none;">
+            <div class="project-info">
+                <div class="info-row">
+                    <span class="info-label">Project Name</span>
+                    <span class="info-value" id="projectName">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Created At</span>
+                    <span class="info-value" id="createdAt">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Expires In</span>
+                    <span class="info-value" id="expiresAt">-</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Read Only</span>
+                    <span class="info-value" id="readOnly">-</span>
+                </div>
+            </div>
+
+            <button id="importBtn" class="btn-send btn-full">Import Project 📥</button>
+            <button onclick="window.location.href='/'" class="btn-glass btn-full"
+                style="justify-content: center;">Return to Home</button>
+        </div>
+    </div>
+
+    <script>
+        const shareId = "{{ share_id }}";
+
+        async function loadShare() {
+            try {
+                const response = await fetch(`/api/share/${shareId}`);
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    showError(data.error || 'Failed to load shared project.');
+                    return;
+                }
+
+                // Update UI
+                document.getElementById('projectName').textContent = data.project.project_name;
+                document.getElementById('createdAt').textContent = new Date(data.created_at).toLocaleString();
+
+                if (data.expires_at) {
+                    const expiresAt = new Date(data.expires_at);
+                    const isExpired = expiresAt < new Date();
+                    const expiresText = expiresAt.toLocaleString();
+                    document.getElementById('expiresAt').innerHTML = isExpired
+                        ? `<span class="expired">${expiresText} (Expired)</span>`
+                        : expiresText;
+
+                    if (isExpired) {
+                        document.getElementById('importBtn').disabled = true;
+                        document.getElementById('importBtn').style.opacity = '0.5';
+                        document.getElementById('importBtn').textContent = 'Project Expired';
+                    }
+                } else {
+                    document.getElementById('expiresAt').textContent = 'Never';
+                }
+
+                document.getElementById('readOnly').textContent = data.read_only ? 'Yes' : 'No';
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+
+                document.getElementById('importBtn').addEventListener('click', importProject);
+
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            }
+        }
+
+        async function importProject() {
+            const btn = document.getElementById('importBtn');
+            if (btn.disabled) return;
+
+            btn.disabled = true;
+            btn.textContent = 'Importing...';
+
+            try {
+                const response = await fetch(`/api/share/${shareId}/import`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    showError(data.error || 'Failed to import project.');
+                    btn.disabled = false;
+                    btn.textContent = 'Import Project 📥';
+                    return;
+                }
+
+                showSuccess(`Project "${data.project.name}" imported successfully!`);
+
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1500);
+
+            } catch (error) {
+                showError('Network error: ' + error.message);
+                btn.disabled = false;
+                btn.textContent = 'Import Project 📥';
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'none';
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = '❌ ' + message;
+            errorDiv.style.display = 'block';
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('success');
+            successDiv.textContent = '✅ ' + message;
+            successDiv.style.display = 'block';
+            document.getElementById('content').style.display = 'none';
+        }
+
+        loadShare();
+    </script>
+</body>
+
+</html>

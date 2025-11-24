@@ -21,6 +21,7 @@ class LuminaApp {
         await this.loadFolderTree();
         this.setupEventListeners();
         this.startAutoSave();
+        this.setupResizers();
     }
 
     setupEventListeners() {
@@ -80,6 +81,46 @@ class LuminaApp {
             }
         });
 
+        // Insomnia Import/Export 버튼
+        document.getElementById('btn-import-insomnia').addEventListener('click', () => this.showImportInsomniaModal());
+        document.getElementById('btn-export-insomnia').addEventListener('click', () => this.showExportInsomniaModal());
+
+        // Import Insomnia Modal
+        document.getElementById('btn-close-import-insomnia').addEventListener('click', () => this.hideImportInsomniaModal());
+        document.getElementById('btn-cancel-import-insomnia').addEventListener('click', () => this.hideImportInsomniaModal());
+        document.getElementById('btn-confirm-import-insomnia').addEventListener('click', () => this.importInsomnia());
+        document.getElementById('import-insomnia-file').addEventListener('change', (e) => this.onInsomniaFileSelected(e));
+
+        // Export Insomnia Modal
+        document.getElementById('btn-close-export-insomnia').addEventListener('click', () => this.hideExportInsomniaModal());
+        document.getElementById('btn-close-export-insomnia2').addEventListener('click', () => this.hideExportInsomniaModal());
+        document.getElementById('btn-copy-export-insomnia').addEventListener('click', () => this.copyExportInsomniaToClipboard());
+        document.getElementById('btn-download-export-insomnia').addEventListener('click', () => this.downloadExportInsomnia());
+
+        // Share 버튼
+        document.getElementById('btn-share-project').addEventListener('click', () => this.showShareModal());
+        document.getElementById('btn-import-share').addEventListener('click', () => this.showImportShareModal());
+
+        // Share Modal
+        document.getElementById('btn-close-share').addEventListener('click', () => this.hideShareModal());
+        document.getElementById('btn-cancel-share').addEventListener('click', () => this.hideShareModal());
+        document.getElementById('btn-create-share').addEventListener('click', () => this.createShare());
+        document.getElementById('btn-copy-share').addEventListener('click', () => this.copyShareURL());
+
+        // Import Share Modal
+        document.getElementById('btn-close-import-share').addEventListener('click', () => this.hideImportShareModal());
+        document.getElementById('btn-cancel-import-share').addEventListener('click', () => this.hideImportShareModal());
+        document.getElementById('btn-confirm-import-share').addEventListener('click', () => this.importShare());
+
+        // Global Constants 버튼
+        document.getElementById('btn-global-constants').addEventListener('click', () => this.showGlobalConstantsModal());
+
+        // Global Constants Modal
+        document.getElementById('btn-close-global-constants').addEventListener('click', () => this.hideGlobalConstantsModal());
+        document.getElementById('btn-cancel-global-constants').addEventListener('click', () => this.hideGlobalConstantsModal());
+        document.getElementById('btn-save-global-constants').addEventListener('click', () => this.saveGlobalConstants());
+        document.getElementById('btn-add-global-constant').addEventListener('click', () => this.addGlobalConstantRow());
+
         // Project Management
         document.getElementById('project-dropdown').addEventListener('change', (e) => this.onProjectChange(e.target.value));
         document.getElementById('btn-new-project').addEventListener('click', () => this.showNewProjectModal());
@@ -115,12 +156,12 @@ class LuminaApp {
 
         // Auth 입력 필드 변경
         ['auth-basic-username', 'auth-basic-password', 'auth-bearer-token',
-         'auth-apikey-name', 'auth-apikey-value', 'auth-apikey-location'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) {
-                el.addEventListener('change', () => this.saveCurrentRequest());
-            }
-        });
+            'auth-apikey-name', 'auth-apikey-value', 'auth-apikey-location'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('change', () => this.saveCurrentRequest());
+                }
+            });
 
         // URL 입력 변경
         document.getElementById('input-url').addEventListener('change', () => this.saveCurrentRequest());
@@ -1441,6 +1482,462 @@ class LuminaApp {
             } else if (e.key === 'Escape') {
                 this.renderProjectsList();
             }
+        });
+    }
+
+    // ==================== Share Functions ====================
+
+    showShareModal() {
+        document.getElementById('share-modal').style.display = 'flex';
+        // 초기화
+        document.getElementById('share-url-container').style.display = 'none';
+        document.getElementById('btn-create-share').style.display = 'block';
+        document.getElementById('btn-copy-share').style.display = 'none';
+        document.getElementById('share-expires').value = '';
+        document.getElementById('share-readonly').checked = true;
+    }
+
+    hideShareModal() {
+        document.getElementById('share-modal').style.display = 'none';
+    }
+
+    async createShare() {
+        const expiresHours = document.getElementById('share-expires').value;
+        const readOnly = document.getElementById('share-readonly').checked;
+
+        const btn = document.getElementById('btn-create-share');
+        btn.disabled = true;
+        btn.textContent = '생성 중...';
+
+        try {
+            const payload = {
+                read_only: readOnly
+            };
+
+            if (expiresHours) {
+                payload.expires_hours = parseInt(expiresHours);
+            }
+
+            const response = await fetch(`${API_BASE}/share/create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // URL 표시
+                document.getElementById('share-url-input').value = result.share_url;
+                document.getElementById('share-url-container').style.display = 'block';
+                document.getElementById('btn-create-share').style.display = 'none';
+                document.getElementById('btn-copy-share').style.display = 'block';
+            } else {
+                alert(`공유 링크 생성 실패: ${result.error}`);
+                btn.disabled = false;
+                btn.textContent = 'Create Share Link';
+            }
+        } catch (error) {
+            console.error('Failed to create share:', error);
+            alert('공유 링크 생성 중 오류가 발생했습니다.');
+            btn.disabled = false;
+            btn.textContent = 'Create Share Link';
+        }
+    }
+
+    copyShareURL() {
+        const urlInput = document.getElementById('share-url-input');
+        urlInput.select();
+        document.execCommand('copy');
+
+        const btn = document.getElementById('btn-copy-share');
+        const originalText = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => {
+            btn.textContent = originalText;
+        }, 2000);
+    }
+
+    showImportShareModal() {
+        document.getElementById('import-share-modal').style.display = 'flex';
+        document.getElementById('import-share-input').value = '';
+    }
+
+    hideImportShareModal() {
+        document.getElementById('import-share-modal').style.display = 'none';
+    }
+
+    async importShare() {
+        const input = document.getElementById('import-share-input').value.trim();
+
+        if (!input) {
+            alert('공유 URL 또는 ID를 입력하세요.');
+            return;
+        }
+
+        // URL에서 share ID 추출 (https://example.com/share/abc123 -> abc123)
+        let shareId = input;
+        if (input.includes('/share/')) {
+            const parts = input.split('/share/');
+            shareId = parts[1];
+        }
+
+        const btn = document.getElementById('btn-confirm-import-share');
+        btn.disabled = true;
+        btn.textContent = '가져오는 중...';
+
+        try {
+            const response = await fetch(`${API_BASE}/share/${shareId}/import`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert(`프로젝트 "${result.project.name}"를 성공적으로 가져왔습니다!`);
+                this.hideImportShareModal();
+
+                // 프로젝트 목록 새로고침
+                await this.loadProjects();
+
+                // 가져온 프로젝트로 전환
+                await this.switchToProject(result.project.id);
+            } else {
+                alert(`프로젝트 가져오기 실패: ${result.error}`);
+                btn.disabled = false;
+                btn.textContent = 'Import Project';
+            }
+        } catch (error) {
+            console.error('Failed to import share:', error);
+            alert('프로젝트 가져오기 중 오류가 발생했습니다.');
+            btn.disabled = false;
+            btn.textContent = 'Import Project';
+        }
+    }
+
+    // ==================== Global Constants Functions ====================
+
+    async showGlobalConstantsModal() {
+        document.getElementById('global-constants-modal').style.display = 'flex';
+        await this.loadGlobalConstants();
+    }
+
+    hideGlobalConstantsModal() {
+        document.getElementById('global-constants-modal').style.display = 'none';
+    }
+
+    async loadGlobalConstants() {
+        try {
+            const response = await fetch('/api/global-constants');
+            const data = await response.json();
+
+            const tbody = document.getElementById('global-constants-tbody');
+            tbody.innerHTML = '';
+
+            // Global constants가 있으면 표시
+            if (data && data.variables && Object.keys(data.variables).length > 0) {
+                for (const [key, value] of Object.entries(data.variables)) {
+                    this.addGlobalConstantRow(key, value);
+                }
+            } else {
+                // 빈 행 하나 추가
+                this.addGlobalConstantRow();
+            }
+        } catch (error) {
+            console.error('Failed to load global constants:', error);
+            alert('Global Constants를 불러오는 중 오류가 발생했습니다.');
+        }
+    }
+
+    addGlobalConstantRow(key = '', value = '') {
+        const tbody = document.getElementById('global-constants-tbody');
+        const row = document.createElement('tr');
+
+        row.innerHTML = `
+            <td><input type="text" value="${this.escapeHtml(key)}" placeholder="KEY" class="global-const-key"></td>
+            <td><input type="text" value="${this.escapeHtml(value)}" placeholder="value" class="global-const-value"></td>
+            <td><button class="btn-remove" onclick="this.closest('tr').remove()">×</button></td>
+        `;
+
+        tbody.appendChild(row);
+    }
+
+    async saveGlobalConstants() {
+        const tbody = document.getElementById('global-constants-tbody');
+        const rows = tbody.querySelectorAll('tr');
+        const constants = {};
+
+        rows.forEach(row => {
+            const keyInput = row.querySelector('.global-const-key');
+            const valueInput = row.querySelector('.global-const-value');
+
+            const key = keyInput.value.trim();
+            const value = valueInput.value.trim();
+
+            if (key) {  // 키가 있는 경우만 저장
+                constants[key] = value;
+            }
+        });
+
+        try {
+            const response = await fetch('/api/global-constants', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ constants })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert('Global Constants가 저장되었습니다!');
+                this.hideGlobalConstantsModal();
+            } else {
+                alert('저장 실패: ' + (result.error || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Failed to save global constants:', error);
+            alert('Global Constants 저장 중 오류가 발생했습니다.');
+        }
+    }
+
+    escapeHtml(text) {
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // ==================== Project Management Functions ====================
+
+    async switchToProject(projectId) {
+        try {
+            const response = await fetch(`${API_BASE}/projects/${projectId}/activate`, {
+                method: 'PUT'
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.currentProject = result.project;
+                await this.loadFolderTree();
+                this.updateProjectDropdown();
+            }
+        } catch (error) {
+            console.error('Failed to switch project:', error);
+        }
+    }
+
+    // ==================== Insomnia Import/Export Functions ====================
+
+    showImportInsomniaModal() {
+        document.getElementById('import-insomnia-modal').style.display = 'flex';
+        // 초기화
+        document.getElementById('import-insomnia-file').value = '';
+        document.getElementById('import-insomnia-preview').style.display = 'none';
+        document.getElementById('btn-confirm-import-insomnia').disabled = true;
+        this.selectedInsomniaFile = null;
+    }
+
+    hideImportInsomniaModal() {
+        document.getElementById('import-insomnia-modal').style.display = 'none';
+    }
+
+    onInsomniaFileSelected(event) {
+        const file = event.target.files[0];
+        if (!file) {
+            document.getElementById('import-insomnia-preview').style.display = 'none';
+            document.getElementById('btn-confirm-import-insomnia').disabled = true;
+            this.selectedInsomniaFile = null;
+            return;
+        }
+
+        // 파일 읽기
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const content = e.target.result;
+                const jsonData = JSON.parse(content);
+
+                // 워크스페이스 이름 찾기
+                let projectName = 'Unknown Project';
+                if (jsonData.resources) {
+                    const workspace = jsonData.resources.find(r => r._type === 'workspace');
+                    if (workspace) {
+                        projectName = workspace.name || 'Unknown Project';
+                    }
+                }
+
+                // 미리보기 표시
+                document.getElementById('import-insomnia-filename').textContent = file.name;
+                document.getElementById('import-insomnia-projectname').textContent = projectName;
+                document.getElementById('import-insomnia-preview').style.display = 'block';
+                document.getElementById('btn-confirm-import-insomnia').disabled = false;
+
+                // 파일 내용 저장
+                this.selectedInsomniaFile = content;
+            } catch (error) {
+                alert('유효하지 않은 JSON 파일입니다.');
+                document.getElementById('import-insomnia-preview').style.display = 'none';
+                document.getElementById('btn-confirm-import-insomnia').disabled = true;
+                this.selectedInsomniaFile = null;
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    async importInsomnia() {
+        if (!this.selectedInsomniaFile) {
+            alert('파일을 선택하세요.');
+            return;
+        }
+
+        const btn = document.getElementById('btn-confirm-import-insomnia');
+        btn.disabled = true;
+        btn.textContent = '가져오는 중...';
+
+        try {
+            const response = await fetch(`${API_BASE}/import/insomnia`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: this.selectedInsomniaFile })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert(`프로젝트 "${result.project.name}"를 성공적으로 가져왔습니다! (${result.imported_count}개 요청)`);
+                this.hideImportInsomniaModal();
+
+                // 프로젝트 목록 새로고침
+                await this.loadProjects();
+
+                // 가져온 프로젝트로 전환
+                await this.switchToProject(result.project.id);
+            } else {
+                alert(`Insomnia JSON 가져오기 실패: ${result.error}`);
+                btn.disabled = false;
+                btn.textContent = 'Import as New Project';
+            }
+        } catch (error) {
+            console.error('Failed to import Insomnia JSON:', error);
+            alert('Insomnia JSON 가져오기 중 오류가 발생했습니다.');
+            btn.disabled = false;
+            btn.textContent = 'Import as New Project';
+        }
+    }
+
+    showExportInsomniaModal() {
+        document.getElementById('export-insomnia-modal').style.display = 'flex';
+        this.loadExportInsomnia();
+    }
+
+    hideExportInsomniaModal() {
+        document.getElementById('export-insomnia-modal').style.display = 'none';
+    }
+
+    async loadExportInsomnia() {
+        try {
+            const response = await fetch(`${API_BASE}/export/insomnia`);
+            const result = await response.json();
+
+            if (result.success) {
+                document.getElementById('export-insomnia-textarea').value = JSON.stringify(result.content, null, 2);
+            } else {
+                alert(`Insomnia JSON 내보내기 실패: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Failed to export Insomnia JSON:', error);
+            alert('Insomnia JSON 내보내기 중 오류가 발생했습니다.');
+        }
+    }
+
+    copyExportInsomniaToClipboard() {
+        const textarea = document.getElementById('export-insomnia-textarea');
+        textarea.select();
+        document.execCommand('copy');
+
+        const btn = document.getElementById('btn-copy-export-insomnia');
+        const originalText = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => {
+            btn.textContent = originalText;
+        }, 2000);
+    }
+
+    downloadExportInsomnia() {
+        const content = document.getElementById('export-insomnia-textarea').value;
+        const blob = new Blob([content], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${this.currentProject?.name || 'Lumina'}_Insomnia_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        const btn = document.getElementById('btn-download-export-insomnia');
+        const originalText = btn.textContent;
+        btn.textContent = '✅ Downloaded!';
+        setTimeout(() => {
+            btn.textContent = originalText;
+        }, 2000);
+    }
+
+    setupResizers() {
+        const sidebar = document.getElementById('sidebar-panel');
+        const mainPanel = document.getElementById('main-panel');
+        const responsePanel = document.getElementById('response-panel');
+        const sidebarResizer = document.getElementById('resizer-sidebar');
+        const responseResizer = document.getElementById('resizer-response');
+
+        if (!sidebar || !sidebarResizer) return;
+
+        let isResizingSidebar = false;
+        let isResizingResponse = false;
+        let startX = 0;
+        let startWidth = 0;
+
+        sidebarResizer.addEventListener('mousedown', (e) => {
+            isResizingSidebar = true;
+            startX = e.clientX;
+            startWidth = sidebar.offsetWidth;
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        });
+
+        responseResizer.addEventListener('mousedown', (e) => {
+            isResizingResponse = true;
+            startX = e.clientX;
+            startWidth = responsePanel.offsetWidth;
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (isResizingSidebar) {
+                const newWidth = startWidth + (e.clientX - startX);
+                if (newWidth >= 200 && newWidth <= 600) {
+                    sidebar.style.width = newWidth + 'px';
+                }
+            } else if (isResizingResponse) {
+                const newWidth = startWidth - (e.clientX - startX);
+                if (newWidth >= 300 && newWidth <= 800) {
+                    responsePanel.style.width = newWidth + 'px';
+                }
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isResizingSidebar = false;
+            isResizingResponse = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
         });
     }
 }

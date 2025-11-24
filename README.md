@@ -19,8 +19,10 @@ Python 기반의 세련되고 강력한 REST API 테스트 도구
 - **스마트 환경 변수**: 재사용 가능한 환경별 변수 관리 (`{{variable}}` 지원)
 - **아름다운 응답 표시**: Pretty JSON, Raw 뷰, Headers 확인
 - **프로젝트 관리**: JSON 파일로 요청 저장/불러오기/팀 공유
+- **프로젝트 공유 URL**: 각 프로젝트를 고유한 URL로 공유하고 불러오기
 - **폴더 구조**: 요청을 폴더로 그룹화하여 체계적 관리
 - **마크다운 Import/Export**: 마크다운 형식으로 API 정의를 가져오고 내보내기
+- **Insomnia Import/Export**: Insomnia 앱과 완벽 호환되는 JSON 형식 지원
 
 ## 🚀 빠른 시작
 
@@ -96,17 +98,39 @@ Request URL:
 - **불러오기**: `Ctrl+O` or File → Open Project
 - **공유**: JSON 파일을 팀원과 공유
 
+### 3-1. 프로젝트 URL 공유
+
+**공유 링크 생성:**
+1. 웹 UI: 좌측 사이드바에서 `🔗 Share` 버튼 클릭
+2. 만료 시간 설정 (선택사항): 1시간, 24시간, 7일, 30일, 무제한
+3. 읽기 전용 옵션 설정
+4. `Create Share Link` 버튼 클릭
+5. 생성된 URL 복사하여 팀원과 공유
+
+**공유 프로젝트 불러오기:**
+1. 웹 UI: 좌측 사이드바에서 `📩 Import Share` 버튼 클릭
+2. 공유 URL 또는 공유 ID 입력
+3. `Import Project` 버튼 클릭
+4. 프로젝트가 자동으로 세션에 추가됨
+
+**특징:**
+- 고유한 8자리 공유 ID 자동 생성
+- 만료 시간 설정 가능 (1시간~30일 또는 무제한)
+- 읽기 전용 옵션으로 원본 보호
+- 브라우저에서 직접 접근 가능: `http://localhost:5000/share/{share_id}`
+- 만료된 공유는 자동으로 정리됨
+
 ### 4. 마크다운으로 API 가져오기/내보내기
 
 **가져오기 (Import):**
 1. 데스크톱: `File` → `Import from Markdown...` (`Ctrl+I`)
-2. 웹: 좌측 사이드바에서 `📥 Import` 버튼 클릭
+2. 웹: 좌측 사이드바에서 `📥 Markdown` 버튼 클릭
 3. 마크다운 파일 선택 또는 내용 붙여넣기
 4. 자동으로 요청이 생성됨
 
 **내보내기 (Export):**
 1. 데스크톱: `File` → `Export to Markdown...` (`Ctrl+E`)
-2. 웹: 좌측 사이드바에서 `📤 Export` 버튼 클릭
+2. 웹: 좌측 사이드바에서 `📤 Markdown` 버튼 클릭
 3. 마크다운 형식으로 모든 요청이 변환됨
 4. 파일로 저장하거나 클립보드에 복사
 
@@ -133,6 +157,33 @@ Request URL:
 ```
 
 샘플 파일: `sample_api.md` 참고
+
+### 5. Insomnia JSON Import/Export
+
+**Insomnia에서 가져오기:**
+1. Insomnia 앱에서 `Application` → `Export Data` → `Export to File`
+2. JSON 파일 저장
+3. Lumina 웹 UI: 좌측 사이드바에서 `📥 Insomnia` 버튼 클릭
+4. `Choose Insomnia JSON File` 버튼으로 파일 선택
+5. 파일 정보 확인 (프로젝트 이름 미리보기)
+6. `Import as New Project` 클릭
+7. 새 프로젝트로 자동 추가됨
+
+**Insomnia로 내보내기:**
+1. Lumina 웹 UI: 좌측 사이드바에서 `📤 Insomnia` 버튼 클릭
+2. JSON 형식으로 프로젝트가 표시됨
+3. `📋 Copy to Clipboard` 또는 `💾 Download JSON` 클릭
+4. Insomnia 앱에서 `Application` → `Import Data` → `From File` or `From Clipboard`
+5. 모든 요청, 폴더, 환경 변수가 복원됨
+
+**지원 기능:**
+- 모든 HTTP 메서드 (GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS)
+- Headers, Query Parameters, Request Body
+- Authentication (Basic Auth, Bearer Token)
+- 폴더 구조 (request_group)
+- 환경 변수
+- 요청 설명 (Description)
+- Form Data (multipart/form-data, x-www-form-urlencoded)
 
 ## 🏗️ 프로젝트 구조
 
