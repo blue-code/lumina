@@ -61,17 +61,6 @@ class LuminaApp {
         document.getElementById('btn-copy-url').addEventListener('click', () => this.copyRequestUrl());
         document.getElementById('btn-delete-request').addEventListener('click', () => this.deleteRequest());
 
-        // Insomnia Import Modal
-        document.getElementById('btn-close-insomnia-import').addEventListener('click', () => this.hideInsomniaImportModal());
-        document.getElementById('btn-cancel-insomnia-import').addEventListener('click', () => this.hideInsomniaImportModal());
-        document.getElementById('btn-confirm-insomnia-import').addEventListener('click', () => this.importInsomnia());
-
-        // Insomnia Export Modal
-        document.getElementById('btn-close-insomnia-export').addEventListener('click', () => this.hideInsomniaExportModal());
-        document.getElementById('btn-close-insomnia-export2').addEventListener('click', () => this.hideInsomniaExportModal());
-        document.getElementById('btn-download-insomnia').addEventListener('click', () => this.downloadInsomniaExport());
-        document.getElementById('btn-copy-insomnia').addEventListener('click', () => this.copyInsomniaExport());
-
         // Click outside to close more menu
         document.addEventListener('click', (e) => {
             const moreMenu = document.getElementById('more-menu');
