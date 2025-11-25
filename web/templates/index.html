@@ -73,6 +73,13 @@
                     📤 Export to Insomnia
                 </div>
                 <div class="more-menu-divider"></div>
+                <div class="more-menu-item" id="menu-import-postman">
+                    📥 Import from Postman
+                </div>
+                <div class="more-menu-item" id="menu-export-postman">
+                    📤 Export to Postman
+                </div>
+                <div class="more-menu-divider"></div>
                 <div class="more-menu-item" id="menu-clear-all">
                     🗑️ Clear All Data
                 </div>
@@ -126,6 +133,53 @@
                     <button class="btn-primary" id="btn-download-export-insomnia">💾 Download</button>
                     <button class="btn-primary" id="btn-copy-export-insomnia">📋 Copy</button>
                     <button class="btn-cancel" id="btn-close-export-insomnia2">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import Postman Modal -->
+        <div class="modal" id="import-postman-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>📥 Import from Postman</h3>
+                    <button class="modal-close" id="btn-close-import-postman">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="tab-help" style="margin-bottom: 1rem;">
+                        💡 Select a Postman Collection JSON file (v2.0 or v2.1).
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <input type="file" id="postman-import-file" accept=".json" class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px;">
+                    </div>
+                    <div id="import-postman-preview" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 6px;">
+                        <p><strong>File:</strong> <span id="import-postman-filename"></span></p>
+                        <p><strong>Collection:</strong> <span id="import-postman-collectionname"></span></p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-cancel" id="btn-cancel-import-postman">Cancel</button>
+                    <button class="btn-primary" id="btn-confirm-import-postman" disabled>Import as New Project</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Postman Modal -->
+        <div class="modal" id="export-postman-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>📤 Export to Postman</h3>
+                    <button class="modal-close" id="btn-close-export-postman">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="tab-help" style="margin-bottom: 1rem;">
+                        💡 Your API collection exported in Postman Collection v2.1 format. Copy or download.
+                    </div>
+                    <textarea id="export-postman-textarea" readonly style="width: 100%; min-height: 400px; max-height: 500px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; padding: 1rem; color: var(--text-main); font-family: var(--font-mono); font-size: 0.875rem;"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-primary" id="btn-download-export-postman">💾 Download</button>
+                    <button class="btn-primary" id="btn-copy-export-postman">📋 Copy</button>
+                    <button class="btn-cancel" id="btn-close-export-postman2">Close</button>
                 </div>
             </div>
         </div>

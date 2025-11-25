@@ -562,6 +562,48 @@ class LuminaWebServer:
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
 
+        # API: Postman 임포트
+        @self.app.route('/api/import/postman', methods=['POST'])
+        def import_postman():
+            pm = self.get_session_project_manager()
+            data = request.json
+            postman_data = data.get('data')
+            if not postman_data:
+                return jsonify({'error': 'Postman data required'}), 400
+
+            try:
+                from utils.postman_converter import PostmanConverter
+                imported_folder = PostmanConverter.import_from_postman(postman_data)
+
+                # 폴더 추가
+                pm.root_folder.add_folder(imported_folder)
+
+                # 모든 요청 개수 계산
+                all_requests = pm.get_all_requests()
+
+                return jsonify({
+                    'success': True,
+                    'imported_count': len(imported_folder.requests),
+                    'folder_name': imported_folder.name
+                })
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
+        # API: Postman 내보내기
+        @self.app.route('/api/export/postman', methods=['GET'])
+        def export_postman():
+            pm = self.get_session_project_manager()
+            try:
+                from utils.postman_converter import PostmanConverter
+                postman_data = PostmanConverter.export_to_postman(pm.root_folder)
+                return jsonify({
+                    'success': True,
+                    'data': postman_data,
+                    'request_count': len(pm.get_all_requests())
+                })
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
         # API: 히스토리 조회
         @self.app.route('/api/history/<request_id>', methods=['GET'])
         def get_history(request_id):

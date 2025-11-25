@@ -1,0 +1,103 @@
+{
+  "session_id": "62d8ba66-188d-4e68-8a4f-7977ab59bbec",
+  "last_accessed": 1764053331.7997382,
+  "active_project_id": "31d005c8-18a2-4df7-8af8-b07afe4a457d",
+  "projects": {
+    "31d005c8-18a2-4df7-8af8-b07afe4a457d": {
+      "version": "1.0",
+      "project_name": "Sample API Project",
+      "root_folder": {
+        "id": "c1adad7e-7f65-4f87-a0cc-f1bafa768429",
+        "name": "Root",
+        "requests": [
+          {
+            "id": "399d0a2b-2489-45be-963a-4891566f96ac",
+            "name": "Get Users",
+            "method": "GET",
+            "url": "https://jsonplaceholder.typicode.com/users",
+            "headers": {},
+            "params": {},
+            "body_type": "none",
+            "body_raw": "",
+            "body_form": {},
+            "auth_type": "none",
+            "auth_basic_username": "",
+            "auth_basic_password": "",
+            "auth_bearer_token": "",
+            "auth_api_key_name": "",
+            "auth_api_key_value": "",
+            "auth_api_key_location": "header",
+            "documentation": ""
+          },
+          {
+            "id": "23635ad7-65f9-477f-8ac1-610a4cb31c6a",
+            "name": "Get Single User",
+            "method": "GET",
+            "url": "https://jsonplaceholder.typicode.com/users/1",
+            "headers": {},
+            "params": {},
+            "body_type": "none",
+            "body_raw": "",
+            "body_form": {},
+            "auth_type": "none",
+            "auth_basic_username": "",
+            "auth_basic_password": "",
+            "auth_bearer_token": "",
+            "auth_api_key_name": "",
+            "auth_api_key_value": "",
+            "auth_api_key_location": "header",
+            "documentation": ""
+          }
+        ],
+        "folders": [
+          {
+            "id": "f2c33329-af82-40b9-ba91-a36317299eda",
+            "name": "Posts",
+            "requests": [
+              {
+                "id": "802e321b-29c4-4697-bd26-a2d67d085d91",
+                "name": "Create Post",
+                "method": "POST",
+                "url": "https://jsonplaceholder.typicode.com/posts",
+                "headers": {
+                  "Content-Type": "application/json"
+                },
+                "params": {},
+                "body_type": "raw",
+                "body_raw": "{\n  \"title\": \"Sample Post\",\n  \"body\": \"This is a sample post\",\n  \"userId\": 1\n}",
+                "body_form": {},
+                "auth_type": "none",
+                "auth_basic_username": "",
+                "auth_basic_password": "",
+                "auth_bearer_token": "",
+                "auth_api_key_name": "",
+                "auth_api_key_value": "",
+                "auth_api_key_location": "header",
+                "documentation": ""
+              }
+            ],
+            "folders": []
+          }
+        ]
+      },
+      "environment_manager": {
+        "environments": [
+          {
+            "id": "46adf659-79f3-478c-a590-13212a1fdfe6",
+            "name": "Development",
+            "variables": {
+              "API_URL": "https://jsonplaceholder.typicode.com",
+              "USER_ID": "1"
+            }
+          }
+        ],
+        "active_environment_id": "46adf659-79f3-478c-a590-13212a1fdfe6",
+        "global_environment": {
+          "id": "4021566a-8b8d-402a-ada3-8a4f5272a17d",
+          "name": "Global",
+          "variables": {}
+        }
+      }
+    }
+  }
+}

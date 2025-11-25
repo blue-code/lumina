@@ -55,6 +55,8 @@ class LuminaApp {
         });
         document.getElementById('menu-import-insomnia').addEventListener('click', () => this.showImportInsomniaModal());
         document.getElementById('menu-export-insomnia').addEventListener('click', () => this.showExportInsomniaModal());
+        document.getElementById('menu-import-postman').addEventListener('click', () => this.showImportPostmanModal());
+        document.getElementById('menu-export-postman').addEventListener('click', () => this.showExportPostmanModal());
         document.getElementById('menu-clear-all').addEventListener('click', () => this.clearAllData());
 
         // Request Toolbar
@@ -81,6 +83,18 @@ class LuminaApp {
         document.getElementById('btn-close-export-insomnia2').addEventListener('click', () => this.hideExportInsomniaModal());
         document.getElementById('btn-copy-export-insomnia').addEventListener('click', () => this.copyExportInsomniaToClipboard());
         document.getElementById('btn-download-export-insomnia').addEventListener('click', () => this.downloadExportInsomnia());
+
+        // Import Postman Modal
+        document.getElementById('btn-close-import-postman').addEventListener('click', () => this.hideImportPostmanModal());
+        document.getElementById('btn-cancel-import-postman').addEventListener('click', () => this.hideImportPostmanModal());
+        document.getElementById('btn-confirm-import-postman').addEventListener('click', () => this.importPostman());
+        document.getElementById('postman-import-file').addEventListener('change', (e) => this.onPostmanFileSelected(e));
+
+        // Export Postman Modal
+        document.getElementById('btn-close-export-postman').addEventListener('click', () => this.hideExportPostmanModal());
+        document.getElementById('btn-close-export-postman2').addEventListener('click', () => this.hideExportPostmanModal());
+        document.getElementById('btn-copy-export-postman').addEventListener('click', () => this.copyExportPostmanToClipboard());
+        document.getElementById('btn-download-export-postman').addEventListener('click', () => this.downloadExportPostman());
 
         // Share 버튼
         document.getElementById('btn-share-project').addEventListener('click', () => this.showShareModal());
@@ -1785,6 +1799,157 @@ class LuminaApp {
         URL.revokeObjectURL(url);
 
         const btn = document.getElementById('btn-download-export-insomnia');
+        const originalText = btn.textContent;
+        btn.textContent = '✅ Downloaded!';
+        setTimeout(() => {
+            btn.textContent = originalText;
+        }, 2000);
+    }
+
+    // ==================== Postman Import/Export Functions ====================
+
+    showImportPostmanModal() {
+        // 초기화
+        document.getElementById('postman-import-file').value = '';
+        document.getElementById('import-postman-preview').style.display = 'none';
+        document.getElementById('btn-confirm-import-postman').disabled = true;
+        this.selectedPostmanFile = null;
+        this.showModal('import-postman-modal');
+    }
+
+    hideImportPostmanModal() {
+        this.hideModal('import-postman-modal');
+    }
+
+    onPostmanFileSelected(event) {
+        const file = event.target.files[0];
+        if (!file) {
+            document.getElementById('import-postman-preview').style.display = 'none';
+            document.getElementById('btn-confirm-import-postman').disabled = true;
+            this.selectedPostmanFile = null;
+            return;
+        }
+
+        // 파일 읽기
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const content = e.target.result;
+                const jsonData = JSON.parse(content);
+
+                // Collection 이름 찾기
+                let collectionName = 'Unknown Collection';
+                if (jsonData.info && jsonData.info.name) {
+                    collectionName = jsonData.info.name;
+                }
+
+                // 미리보기 표시
+                document.getElementById('import-postman-filename').textContent = file.name;
+                document.getElementById('import-postman-collectionname').textContent = collectionName;
+                document.getElementById('import-postman-preview').style.display = 'block';
+                document.getElementById('btn-confirm-import-postman').disabled = false;
+
+                // 파일 내용 저장
+                this.selectedPostmanFile = jsonData;
+            } catch (error) {
+                alert('유효하지 않은 JSON 파일입니다.');
+                document.getElementById('import-postman-preview').style.display = 'none';
+                document.getElementById('btn-confirm-import-postman').disabled = true;
+                this.selectedPostmanFile = null;
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    async importPostman() {
+        if (!this.selectedPostmanFile) {
+            alert('파일을 선택하세요.');
+            return;
+        }
+
+        const btn = document.getElementById('btn-confirm-import-postman');
+        btn.disabled = true;
+        btn.textContent = '가져오는 중...';
+
+        try {
+            const response = await fetch(`${API_BASE}/import/postman`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data: this.selectedPostmanFile })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert(`성공적으로 가져왔습니다! (${result.imported_count}개 요청)`);
+                this.hideImportPostmanModal();
+
+                // 폴더 트리 새로고침
+                await this.loadFolderTree();
+            } else {
+                alert(`Postman Collection 가져오기 실패: ${result.error}`);
+                btn.disabled = false;
+                btn.textContent = 'Import as New Project';
+            }
+        } catch (error) {
+            console.error('Failed to import Postman Collection:', error);
+            alert('Postman Collection 가져오기 중 오류가 발생했습니다.');
+            btn.disabled = false;
+            btn.textContent = 'Import as New Project';
+        }
+    }
+
+    showExportPostmanModal() {
+        this.showModal('export-postman-modal');
+        this.loadExportPostman();
+    }
+
+    hideExportPostmanModal() {
+        this.hideModal('export-postman-modal');
+    }
+
+    async loadExportPostman() {
+        try {
+            const response = await fetch(`${API_BASE}/export/postman`);
+            const result = await response.json();
+
+            if (result.success) {
+                document.getElementById('export-postman-textarea').value = JSON.stringify(result.data, null, 2);
+            } else {
+                alert(`Postman Collection 내보내기 실패: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Failed to export Postman Collection:', error);
+            alert('Postman Collection 내보내기 중 오류가 발생했습니다.');
+        }
+    }
+
+    copyExportPostmanToClipboard() {
+        const textarea = document.getElementById('export-postman-textarea');
+        textarea.select();
+        document.execCommand('copy');
+
+        const btn = document.getElementById('btn-copy-export-postman');
+        const originalText = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => {
+            btn.textContent = originalText;
+        }, 2000);
+    }
+
+    downloadExportPostman() {
+        const content = document.getElementById('export-postman-textarea').value;
+        const blob = new Blob([content], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${this.currentProject?.name || 'Lumina'}_Postman_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        const btn = document.getElementById('btn-download-export-postman');
         const originalText = btn.textContent;
         btn.textContent = '✅ Downloaded!';
         setTimeout(() => {

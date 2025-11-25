@@ -5,7 +5,17 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Read(//c/Users/ML_02/Downloads/**)",
-      "WebFetch(domain:www.claude.com)"
+      "WebFetch(domain:www.claude.com)",
+      "Bash(python web_server_standalone.py:*)",
+      "Bash(git restore:*)",
+      "Skill(webapp-testing)",
+      "Bash(python test_ui_buttons.py:*)",
+      "Bash(playwright install:*)",
+      "Bash(lsof:*)",
+      "Read(//private/tmp/**)",
+      "Bash(python:*)",
+      "Bash(git log:*)",
+      "Read(//tmp/**)"
     ],
     "deny": [],
     "ask": []

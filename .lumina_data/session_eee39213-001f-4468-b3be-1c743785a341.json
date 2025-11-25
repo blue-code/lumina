@@ -1,0 +1,122 @@
+{
+  "session_id": "eee39213-001f-4468-b3be-1c743785a341",
+  "last_accessed": 1764053331.80198,
+  "active_project_id": "453d0feb-96d9-4131-99f4-4bb8cfbee299",
+  "projects": {
+    "453d0feb-96d9-4131-99f4-4bb8cfbee299": {
+      "version": "1.0",
+      "project_name": "Sample API Project",
+      "root_folder": {
+        "id": "79ec1ca1-4bea-4b96-886f-824ec6740ade",
+        "name": "Root",
+        "requests": [
+          {
+            "id": "6d852191-babd-4050-b3db-bfed7f847652",
+            "name": "Get Users",
+            "method": "GET",
+            "url": "https://jsonplaceholder.typicode.com/users",
+            "headers": {},
+            "params": {},
+            "body_type": "none",
+            "body_raw": "",
+            "body_form": {},
+            "auth_type": "none",
+            "auth_basic_username": "",
+            "auth_basic_password": "",
+            "auth_bearer_token": "",
+            "auth_api_key_name": "",
+            "auth_api_key_value": "",
+            "auth_api_key_location": "header",
+            "documentation": ""
+          },
+          {
+            "id": "99616ffd-2aa8-40ce-9bde-c5c2fdbd34d4",
+            "name": "Get Single User",
+            "method": "GET",
+            "url": "https://jsonplaceholder.typicode.com/users/1",
+            "headers": {},
+            "params": {},
+            "body_type": "none",
+            "body_raw": "",
+            "body_form": {},
+            "auth_type": "none",
+            "auth_basic_username": "",
+            "auth_basic_password": "",
+            "auth_bearer_token": "",
+            "auth_api_key_name": "",
+            "auth_api_key_value": "",
+            "auth_api_key_location": "header",
+            "documentation": ""
+          },
+          {
+            "id": "99754592-e062-4120-a980-afd951525600",
+            "name": "Test Request",
+            "method": "GET",
+            "url": "https://httpbin.org/get",
+            "headers": {},
+            "params": {},
+            "body_type": "raw",
+            "body_raw": "",
+            "body_form": {},
+            "auth_type": "none",
+            "auth_basic_username": "",
+            "auth_basic_password": "",
+            "auth_bearer_token": "",
+            "auth_api_key_name": "",
+            "auth_api_key_value": "",
+            "auth_api_key_location": "header",
+            "documentation": ""
+          }
+        ],
+        "folders": [
+          {
+            "id": "0394979d-8903-4ba9-92c5-d696bef6f5f5",
+            "name": "Posts",
+            "requests": [
+              {
+                "id": "b7ae83dc-8154-43ff-b34d-eeaf5250696f",
+                "name": "Create Post",
+                "method": "POST",
+                "url": "https://jsonplaceholder.typicode.com/posts",
+                "headers": {
+                  "Content-Type": "application/json"
+                },
+                "params": {},
+                "body_type": "raw",
+                "body_raw": "{\n  \"title\": \"Sample Post\",\n  \"body\": \"This is a sample post\",\n  \"userId\": 1\n}",
+                "body_form": {},
+                "auth_type": "none",
+                "auth_basic_username": "",
+                "auth_basic_password": "",
+                "auth_bearer_token": "",
+                "auth_api_key_name": "",
+                "auth_api_key_value": "",
+                "auth_api_key_location": "header",
+                "documentation": ""
+              }
+            ],
+            "folders": []
+          }
+        ]
+      },
+      "environment_manager": {
+        "environments": [
+          {
+            "id": "e247048a-786b-4245-8110-234172efd84b",
+            "name": "Development",
+            "variables": {
+              "API_URL": "https://jsonplaceholder.typicode.com",
+              "USER_ID": "1"
+            }
+          }
+        ],
+        "active_environment_id": "e247048a-786b-4245-8110-234172efd84b",
+        "global_environment": {
+          "id": "fac42456-f853-4440-a6ff-b3918e05ddab",
+          "name": "Global",
+          "variables": {}
+        }
+      }
+    }
+  }
+}
