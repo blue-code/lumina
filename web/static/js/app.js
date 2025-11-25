@@ -53,8 +53,8 @@ class LuminaApp {
             e.stopPropagation();
             this.toggleMoreMenu();
         });
-        document.getElementById('menu-import-insomnia').addEventListener('click', () => this.showInsomniaImportModal());
-        document.getElementById('menu-export-insomnia').addEventListener('click', () => this.exportInsomnia());
+        document.getElementById('menu-import-insomnia').addEventListener('click', () => this.showImportInsomniaModal());
+        document.getElementById('menu-export-insomnia').addEventListener('click', () => this.showExportInsomniaModal());
         document.getElementById('menu-clear-all').addEventListener('click', () => this.clearAllData());
 
         // Request Toolbar
@@ -84,9 +84,6 @@ class LuminaApp {
 
         // Share 버튼
         document.getElementById('btn-share-project').addEventListener('click', () => this.showShareModal());
-
-        // Import MD 버튼
-        document.getElementById('btn-import-md').addEventListener('click', () => this.showImportModal());
 
         // Share Modal
         document.getElementById('btn-close-share').addEventListener('click', () => this.hideShareModal());
@@ -240,7 +237,6 @@ class LuminaApp {
             <span class="tree-folder-toggle">${isCollapsed ? '▶' : '▼'}</span>
             <span class="tree-folder-icon">${isCollapsed ? '📁' : '📂'}</span>
             <span class="tree-folder-name">${folder.name}</span>
-            ${level > 0 ? '<div class="tree-folder-actions"><button class="tree-btn" data-action="delete">🗑️</button></div>' : ''}
         `;
 
         // 드래그 이벤트
@@ -300,20 +296,11 @@ class LuminaApp {
         // 폴더 클릭 (현재 폴더 설정)
         headerDiv.addEventListener('click', () => {
             this.currentFolder = folder;
+            this.currentRequest = null; // 요청 선택 해제
             document.querySelectorAll('.tree-folder-header').forEach(h => h.classList.remove('active'));
+            document.querySelectorAll('.tree-request').forEach(r => r.classList.remove('active'));
             headerDiv.classList.add('active');
         });
-
-        // 삭제 버튼
-        const deleteBtn = headerDiv.querySelector('[data-action="delete"]');
-        if (deleteBtn) {
-            deleteBtn.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                if (confirm(`Delete folder "${folder.name}"?`)) {
-                    await this.deleteFolder(folder.id);
-                }
-            });
-        }
 
         folderDiv.appendChild(headerDiv);
 
@@ -1039,8 +1026,32 @@ class LuminaApp {
     }
 
     async deleteRequest() {
+        // 폴더가 선택된 경우
+        if (this.currentFolder && this.currentFolder.id && !this.currentRequest) {
+            // 루트 폴더는 삭제 불가
+            if (this.currentFolder.id === this.folderTree.id) {
+                alert('Cannot delete root folder');
+                return;
+            }
+
+            if (!confirm(`Delete folder "${this.currentFolder.name}" and all its contents? This cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                await this.deleteFolder(this.currentFolder.id);
+                this.currentFolder = null;
+                alert('Folder deleted successfully');
+            } catch (error) {
+                console.error('Failed to delete folder:', error);
+                alert('Failed to delete folder');
+            }
+            return;
+        }
+
+        // 요청이 선택된 경우
         if (!this.currentRequest) {
-            alert('Please select a request first');
+            alert('Please select a folder or request first');
             return;
         }
 
@@ -1101,124 +1112,6 @@ class LuminaApp {
         }
     }
 
-    // Insomnia Import/Export
-    showInsomniaImportModal() {
-        document.getElementById('insomnia-import-modal').classList.add('active');
-        document.getElementById('insomnia-import-file').value = '';
-        document.getElementById('more-menu').classList.add('hidden');
-    }
-
-    hideInsomniaImportModal() {
-        document.getElementById('insomnia-import-modal').classList.remove('active');
-    }
-
-    async importInsomnia() {
-        const fileInput = document.getElementById('insomnia-import-file');
-        if (!fileInput.files || fileInput.files.length === 0) {
-            alert('Please select an Insomnia export file (.json)');
-            return;
-        }
-
-        const file = fileInput.files[0];
-        const reader = new FileReader();
-
-        reader.onload = async (e) => {
-            try {
-                const content = e.target.result;
-                const insomniaData = JSON.parse(content);
-
-                const response = await fetch(`${API_BASE}/import/insomnia`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(insomniaData)
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    alert(`Successfully imported from Insomnia!\nFolder: ${result.folder_name}\nRequests: ${result.imported_count}`);
-                    this.hideInsomniaImportModal();
-                    await this.loadFolderTree();
-                } else {
-                    alert(`Import failed: ${result.error}`);
-                }
-            } catch (error) {
-                console.error('Failed to import Insomnia data:', error);
-                alert(`Import failed: ${error.message}`);
-            }
-        };
-
-        reader.readAsText(file);
-    }
-
-    async exportInsomnia() {
-        try {
-            const response = await fetch(`${API_BASE}/export/insomnia`);
-            const result = await response.json();
-
-            if (result.success) {
-                // Store export data and show modal
-                this.insomniaExportData = result.data;
-                document.getElementById('insomnia-export-preview').textContent =
-                    JSON.stringify(result.data, null, 2);
-                document.getElementById('insomnia-export-modal').classList.add('active');
-                document.getElementById('more-menu').classList.add('hidden');
-            } else {
-                alert(`Export failed: ${result.error}`);
-            }
-        } catch (error) {
-            console.error('Failed to export to Insomnia:', error);
-            alert(`Export failed: ${error.message}`);
-        }
-    }
-
-    hideInsomniaExportModal() {
-        document.getElementById('insomnia-export-modal').classList.remove('active');
-    }
-
-    downloadInsomniaExport() {
-        if (!this.insomniaExportData) {
-            alert('No export data available');
-            return;
-        }
-
-        const dataStr = JSON.stringify(this.insomniaExportData, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(dataBlob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'lumina-export-insomnia.json';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
-        alert('Insomnia export file downloaded!');
-        this.hideInsomniaExportModal();
-    }
-
-    async copyInsomniaExport() {
-        if (!this.insomniaExportData) {
-            alert('No export data available');
-            return;
-        }
-
-        const dataStr = JSON.stringify(this.insomniaExportData, null, 2);
-
-        try {
-            await navigator.clipboard.writeText(dataStr);
-            alert('Insomnia export copied to clipboard!');
-        } catch (error) {
-            // Fallback for older browsers
-            const textarea = document.createElement('textarea');
-            textarea.value = dataStr;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            alert('Insomnia export copied to clipboard!');
-        }
-    }
 
     // ==================
     // 프로젝트 관리

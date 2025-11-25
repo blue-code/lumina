@@ -754,6 +754,88 @@ textarea:focus {
     color: var(--text-main);
 }
 
+/* Folder Tree Styles */
+.tree-folder {
+    margin-bottom: 0.2rem;
+}
+
+.tree-folder-header {
+    padding: 0.6rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+    user-select: none;
+    border-radius: 4px 0 0 4px;
+}
+
+.tree-folder-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+}
+
+.tree-folder-header.active {
+    background: linear-gradient(90deg, rgba(112, 0, 255, 0.2) 0%, rgba(112, 0, 255, 0.05) 100%);
+    border-left-color: var(--secondary-color);
+    color: var(--text-main);
+    box-shadow: 0 0 20px rgba(112, 0, 255, 0.2), inset 0 0 20px rgba(112, 0, 255, 0.1);
+    font-weight: 600;
+}
+
+.tree-folder-toggle {
+    font-size: 0.7rem;
+    transition: transform 0.2s;
+}
+
+.tree-folder-icon {
+    font-size: 1rem;
+}
+
+.tree-folder-name {
+    flex: 1;
+}
+
+.tree-folder-content {
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.tree-folder-content.collapsed {
+    display: none;
+}
+
+.tree-request {
+    padding: 0.6rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+    border-radius: 4px 0 0 4px;
+}
+
+.tree-request:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+}
+
+.tree-request.active {
+    background: linear-gradient(90deg, rgba(0, 242, 255, 0.2) 0%, rgba(0, 242, 255, 0.05) 100%);
+    border-left-color: var(--primary-color);
+    color: var(--text-main);
+    box-shadow: 0 0 20px rgba(0, 242, 255, 0.2), inset 0 0 20px rgba(0, 242, 255, 0.1);
+    font-weight: 600;
+}
+
+.request-name {
+    flex: 1;
+}
+
 /* Utility */
 .hidden { display: none !important; }
 .mt-1 { margin-top: 0.5rem; }
