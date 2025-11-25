@@ -166,54 +166,6 @@ class LuminaApp {
 
         // Method 선택 변경
         document.getElementById('select-method').addEventListener('change', () => this.saveCurrentRequest());
-
-        // Resizer
-        this.setupResizer();
-    }
-
-    setupResizer() {
-        const resizer = document.getElementById('resizer');
-        const requestEditor = document.querySelector('.request-editor');
-        const responsePanel = document.querySelector('.response-panel');
-        const container = document.querySelector('.container');
-
-        let startX = 0;
-        let startWidth = 0;
-
-        resizer.addEventListener('mousedown', (e) => {
-            this.isResizing = true;
-            startX = e.clientX;
-            startWidth = requestEditor.offsetWidth;
-            resizer.classList.add('resizing');
-            document.body.style.cursor = 'col-resize';
-            document.body.style.userSelect = 'none';
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!this.isResizing) return;
-
-            const delta = e.clientX - startX;
-            const newWidth = startWidth + delta;
-            const containerWidth = container.offsetWidth;
-            const sidebarWidth = 320; // sidebar width
-            const resizerWidth = 5;
-            const minWidth = 400;
-            const maxWidth = containerWidth - sidebarWidth - resizerWidth - minWidth;
-
-            if (newWidth >= minWidth && newWidth <= maxWidth) {
-                requestEditor.style.flex = 'none';
-                requestEditor.style.width = newWidth + 'px';
-            }
-        });
-
-        document.addEventListener('mouseup', () => {
-            if (this.isResizing) {
-                this.isResizing = false;
-                resizer.classList.remove('resizing');
-                document.body.style.cursor = '';
-                document.body.style.userSelect = '';
-            }
-        });
     }
 
     async loadFolderTree() {
@@ -869,6 +821,8 @@ class LuminaApp {
         // Check if history elements exist (they don't in simplified UI)
         const inputList = document.getElementById('history-input-list');
         const outputList = document.getElementById('history-output-list');
+        const paramsHistoryList = document.getElementById('params-history-list');
+
         if (!inputList || !outputList) return;
 
         try {
@@ -878,12 +832,21 @@ class LuminaApp {
             if (result.success && result.history.length > 0) {
                 this.renderInputHistory(result.history);
                 this.renderOutputHistory(result.history);
+
+                // Render params history if element exists
+                if (paramsHistoryList) {
+                    this.renderParamsHistory(result.history);
+                }
             } else {
                 // No history
                 inputList.innerHTML =
                     '<p class="history-empty">No history yet. Send a request to start tracking!</p>';
                 outputList.innerHTML =
                     '<p class="history-empty">No response history yet. Send a request to see responses!</p>';
+                if (paramsHistoryList) {
+                    paramsHistoryList.innerHTML =
+                        '<p class="history-empty">No parameter history yet. Send a request with parameters!</p>';
+                }
             }
         } catch (error) {
             console.error('Failed to load history:', error);
@@ -960,6 +923,62 @@ class LuminaApp {
 
             historyList.appendChild(item);
         });
+    }
+
+    renderParamsHistory(history) {
+        const historyList = document.getElementById('params-history-list');
+        if (!historyList) return; // Element doesn't exist
+        historyList.innerHTML = '';
+
+        // Filter history entries that have params
+        const entriesWithParams = history.filter(entry =>
+            entry.request.params && Object.keys(entry.request.params).length > 0
+        );
+
+        if (entriesWithParams.length === 0) {
+            historyList.innerHTML = '<p class="history-empty" style="text-align: center; color: var(--text-muted); padding: 1rem;">No parameters used yet</p>';
+            return;
+        }
+
+        entriesWithParams.forEach(entry => {
+            const item = document.createElement('div');
+            item.className = 'history-item';
+
+            const timestamp = new Date(entry.timestamp);
+            const timeStr = timestamp.toLocaleString();
+
+            const paramsCount = Object.keys(entry.request.params).length;
+            const paramsPreview = Object.entries(entry.request.params)
+                .slice(0, 2)
+                .map(([key, value]) => `${key}=${value}`)
+                .join(', ');
+
+            item.innerHTML = `
+                <div class="history-item-header">
+                    <span class="history-timestamp">🔧 ${timeStr}</span>
+                </div>
+                <div class="history-meta" style="color: var(--text-main); margin-top: 0.3rem;">
+                    ${paramsCount} parameter${paramsCount > 1 ? 's' : ''}
+                </div>
+                <div class="history-meta" style="font-family: var(--font-mono); font-size: 0.75rem; margin-top: 0.3rem;">
+                    ${paramsPreview}${Object.keys(entry.request.params).length > 2 ? '...' : ''}
+                </div>
+            `;
+
+            item.addEventListener('click', () => {
+                this.loadHistoryParams(entry);
+            });
+
+            historyList.appendChild(item);
+        });
+    }
+
+    loadHistoryParams(entry) {
+        // Load parameters from history
+        if (confirm('Load these parameters? Current parameters will be replaced.')) {
+            this.currentRequest.params = entry.request.params || {};
+            this.renderKeyValueTable('params', this.currentRequest.params);
+        }
     }
 
     loadHistoryRequest(entry) {
@@ -1958,54 +1977,79 @@ class LuminaApp {
     }
 
     setupResizers() {
-        const sidebar = document.getElementById('sidebar-panel');
-        const mainPanel = document.getElementById('main-panel');
-        const responsePanel = document.getElementById('response-panel');
+        const sidebar = document.querySelector('.sidebar');
         const sidebarResizer = document.getElementById('resizer-sidebar');
-        const responseResizer = document.getElementById('resizer-response');
-
-        if (!sidebar || !sidebarResizer) return;
+        const mainResizer = document.getElementById('resizer');
 
         let isResizingSidebar = false;
-        let isResizingResponse = false;
+        let isResizingMain = false;
         let startX = 0;
         let startWidth = 0;
 
-        sidebarResizer.addEventListener('mousedown', (e) => {
-            isResizingSidebar = true;
-            startX = e.clientX;
-            startWidth = sidebar.offsetWidth;
-            document.body.style.cursor = 'col-resize';
-            document.body.style.userSelect = 'none';
-        });
+        // Sidebar resizer
+        if (sidebar && sidebarResizer) {
+            sidebarResizer.addEventListener('mousedown', (e) => {
+                isResizingSidebar = true;
+                startX = e.clientX;
+                startWidth = sidebar.offsetWidth;
+                sidebarResizer.classList.add('resizing');
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+            });
+        }
 
-        responseResizer.addEventListener('mousedown', (e) => {
-            isResizingResponse = true;
-            startX = e.clientX;
-            startWidth = responsePanel.offsetWidth;
-            document.body.style.cursor = 'col-resize';
-            document.body.style.userSelect = 'none';
-        });
+        // Main (request editor / response panel) resizer
+        if (mainResizer) {
+            const requestEditor = document.querySelector('.request-editor');
+
+            mainResizer.addEventListener('mousedown', (e) => {
+                isResizingMain = true;
+                startX = e.clientX;
+                startWidth = requestEditor.offsetWidth;
+                mainResizer.classList.add('resizing');
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+            });
+        }
 
         document.addEventListener('mousemove', (e) => {
-            if (isResizingSidebar) {
+            if (isResizingSidebar && sidebar) {
                 const newWidth = startWidth + (e.clientX - startX);
                 if (newWidth >= 200 && newWidth <= 600) {
                     sidebar.style.width = newWidth + 'px';
                 }
-            } else if (isResizingResponse) {
-                const newWidth = startWidth - (e.clientX - startX);
-                if (newWidth >= 300 && newWidth <= 800) {
-                    responsePanel.style.width = newWidth + 'px';
+            } else if (isResizingMain) {
+                const requestEditor = document.querySelector('.request-editor');
+                const container = document.querySelector('.container');
+                const sidebarWidth = sidebar ? sidebar.offsetWidth : 300;
+
+                const delta = e.clientX - startX;
+                const newWidth = startWidth + delta;
+                const containerWidth = container.offsetWidth;
+                const resizerWidth = 5;
+                const minWidth = 400;
+                const maxWidth = containerWidth - sidebarWidth - resizerWidth - minWidth;
+
+                if (newWidth >= minWidth && newWidth <= maxWidth) {
+                    requestEditor.style.flex = 'none';
+                    requestEditor.style.width = newWidth + 'px';
                 }
             }
         });
 
         document.addEventListener('mouseup', () => {
-            isResizingSidebar = false;
-            isResizingResponse = false;
-            document.body.style.cursor = '';
-            document.body.style.userSelect = '';
+            if (isResizingSidebar) {
+                isResizingSidebar = false;
+                if (sidebarResizer) sidebarResizer.classList.remove('resizing');
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
+            if (isResizingMain) {
+                isResizingMain = false;
+                if (mainResizer) mainResizer.classList.remove('resizing');
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
         });
     }
 }

@@ -90,6 +90,9 @@
             </div>
         </div>
 
+        <!-- Sidebar Resizer -->
+        <div class="resizer" id="resizer-sidebar"></div>
+
         <!-- Import Insomnia Modal -->
         <div class="modal" id="import-insomnia-modal">
             <div class="modal-content">
@@ -221,18 +224,28 @@
 
                 <!-- Tab Contents -->
                 <div class="tab-content active" id="tab-params">
-                    <table class="key-value-table">
-                        <thead>
-                            <tr>
-                                <th>Key</th>
-                                <th>Value</th>
-                                <th width="40"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="params-tbody">
-                            <!-- Params will be loaded here -->
-                        </tbody>
-                    </table>
+                    <div style="margin-bottom: 1rem;">
+                        <h4 style="margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">Current Parameters</h4>
+                        <table class="key-value-table">
+                            <thead>
+                                <tr>
+                                    <th>Key</th>
+                                    <th>Value</th>
+                                    <th width="40"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="params-tbody">
+                                <!-- Params will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="params-history-section" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
+                        <h4 style="margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">Parameter History</h4>
+                        <div id="params-history-list" class="history-list" style="max-height: 200px;">
+                            <!-- Parameter history will be loaded here -->
+                        </div>
+                    </div>
                 </div>
 
                 <div class="tab-content" id="tab-headers">
