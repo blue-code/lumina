@@ -806,6 +806,8 @@ class LuminaApp {
 
     renderResponseHeaders(headers) {
         const tbody = document.getElementById('response-headers-tbody');
+        if (!tbody) return; // Element doesn't exist in simplified UI
+
         tbody.innerHTML = '';
 
         if (!headers || Object.keys(headers).length === 0) {
@@ -850,6 +852,11 @@ class LuminaApp {
     async loadHistory() {
         if (!this.currentRequest) return;
 
+        // Check if history elements exist (they don't in simplified UI)
+        const inputList = document.getElementById('history-input-list');
+        const outputList = document.getElementById('history-output-list');
+        if (!inputList || !outputList) return;
+
         try {
             const response = await fetch(`${API_BASE}/history/${this.currentRequest.id}?limit=20`);
             const result = await response.json();
@@ -859,9 +866,9 @@ class LuminaApp {
                 this.renderOutputHistory(result.history);
             } else {
                 // No history
-                document.getElementById('history-input-list').innerHTML =
+                inputList.innerHTML =
                     '<p class="history-empty">No history yet. Send a request to start tracking!</p>';
-                document.getElementById('history-output-list').innerHTML =
+                outputList.innerHTML =
                     '<p class="history-empty">No response history yet. Send a request to see responses!</p>';
             }
         } catch (error) {
@@ -871,6 +878,7 @@ class LuminaApp {
 
     renderInputHistory(history) {
         const historyList = document.getElementById('history-input-list');
+        if (!historyList) return; // Element doesn't exist in simplified UI
         historyList.innerHTML = '';
 
         history.forEach((entry, index) => {
@@ -903,6 +911,7 @@ class LuminaApp {
 
     renderOutputHistory(history) {
         const historyList = document.getElementById('history-output-list');
+        if (!historyList) return; // Element doesn't exist in simplified UI
         historyList.innerHTML = '';
 
         history.forEach(entry => {
