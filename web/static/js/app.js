@@ -81,15 +81,11 @@ class LuminaApp {
             }
         });
 
-        // Insomnia Import/Export 버튼
-        document.getElementById('btn-import-insomnia').addEventListener('click', () => this.showImportInsomniaModal());
-        document.getElementById('btn-export-insomnia').addEventListener('click', () => this.showExportInsomniaModal());
-
         // Import Insomnia Modal
         document.getElementById('btn-close-import-insomnia').addEventListener('click', () => this.hideImportInsomniaModal());
         document.getElementById('btn-cancel-import-insomnia').addEventListener('click', () => this.hideImportInsomniaModal());
         document.getElementById('btn-confirm-import-insomnia').addEventListener('click', () => this.importInsomnia());
-        document.getElementById('import-insomnia-file').addEventListener('change', (e) => this.onInsomniaFileSelected(e));
+        document.getElementById('insomnia-import-file').addEventListener('change', (e) => this.onInsomniaFileSelected(e));
 
         // Export Insomnia Modal
         document.getElementById('btn-close-export-insomnia').addEventListener('click', () => this.hideExportInsomniaModal());
@@ -99,7 +95,9 @@ class LuminaApp {
 
         // Share 버튼
         document.getElementById('btn-share-project').addEventListener('click', () => this.showShareModal());
-        document.getElementById('btn-import-share').addEventListener('click', () => this.showImportShareModal());
+
+        // Import MD 버튼
+        document.getElementById('btn-import-md').addEventListener('click', () => this.showImportModal());
 
         // Share Modal
         document.getElementById('btn-close-share').addEventListener('click', () => this.hideShareModal());
@@ -1485,20 +1483,34 @@ class LuminaApp {
         });
     }
 
+    // ==================== Modal Helper Functions ====================
+
+    showModal(modalId) {
+        document.getElementById(modalId).classList.add('active');
+    }
+
+    hideModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+
+    showImportModal() {
+        this.showModal('import-modal');
+    }
+
     // ==================== Share Functions ====================
 
     showShareModal() {
-        document.getElementById('share-modal').style.display = 'flex';
         // 초기화
         document.getElementById('share-url-container').style.display = 'none';
         document.getElementById('btn-create-share').style.display = 'block';
         document.getElementById('btn-copy-share').style.display = 'none';
         document.getElementById('share-expires').value = '';
         document.getElementById('share-readonly').checked = true;
+        this.showModal('share-modal');
     }
 
     hideShareModal() {
-        document.getElementById('share-modal').style.display = 'none';
+        this.hideModal('share-modal');
     }
 
     async createShare() {
@@ -1559,12 +1571,12 @@ class LuminaApp {
     }
 
     showImportShareModal() {
-        document.getElementById('import-share-modal').style.display = 'flex';
         document.getElementById('import-share-input').value = '';
+        this.showModal('import-share-modal');
     }
 
     hideImportShareModal() {
-        document.getElementById('import-share-modal').style.display = 'none';
+        this.hideModal('import-share-modal');
     }
 
     async importShare() {
@@ -1619,12 +1631,12 @@ class LuminaApp {
     // ==================== Global Constants Functions ====================
 
     async showGlobalConstantsModal() {
-        document.getElementById('global-constants-modal').style.display = 'flex';
+        this.showModal('global-constants-modal');
         await this.loadGlobalConstants();
     }
 
     hideGlobalConstantsModal() {
-        document.getElementById('global-constants-modal').style.display = 'none';
+        this.hideModal('global-constants-modal');
     }
 
     async loadGlobalConstants() {
@@ -1735,16 +1747,16 @@ class LuminaApp {
     // ==================== Insomnia Import/Export Functions ====================
 
     showImportInsomniaModal() {
-        document.getElementById('import-insomnia-modal').style.display = 'flex';
         // 초기화
-        document.getElementById('import-insomnia-file').value = '';
+        document.getElementById('insomnia-import-file').value = '';
         document.getElementById('import-insomnia-preview').style.display = 'none';
         document.getElementById('btn-confirm-import-insomnia').disabled = true;
         this.selectedInsomniaFile = null;
+        this.showModal('import-insomnia-modal');
     }
 
     hideImportInsomniaModal() {
-        document.getElementById('import-insomnia-modal').style.display = 'none';
+        this.hideModal('import-insomnia-modal');
     }
 
     onInsomniaFileSelected(event) {
@@ -1832,12 +1844,12 @@ class LuminaApp {
     }
 
     showExportInsomniaModal() {
-        document.getElementById('export-insomnia-modal').style.display = 'flex';
+        this.showModal('export-insomnia-modal');
         this.loadExportInsomnia();
     }
 
     hideExportInsomniaModal() {
-        document.getElementById('export-insomnia-modal').style.display = 'none';
+        this.hideModal('export-insomnia-modal');
     }
 
     async loadExportInsomnia() {

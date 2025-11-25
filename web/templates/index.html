@@ -95,16 +95,19 @@
                 </div>
                 <div class="modal-body">
                     <div class="tab-help" style="margin-bottom: 1rem;">
-                        💡 Paste your Insomnia export JSON here or upload a file.
+                        💡 Select an Insomnia export JSON file.
                     </div>
                     <div style="margin-bottom: 1rem;">
-                        <input type="file" id="insomnia-import-file" accept=".json" style="margin-bottom: 0.5rem;">
+                        <input type="file" id="insomnia-import-file" accept=".json" class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px;">
                     </div>
-                    <textarea id="import-insomnia-textarea" placeholder='Paste Insomnia JSON here...&#10;&#10;Example:&#10;{&#10;  "_type": "export",&#10;  "__export_format": 4,&#10;  "resources": [...]&#10;}'></textarea>
+                    <div id="import-insomnia-preview" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 6px;">
+                        <p><strong>File:</strong> <span id="import-insomnia-filename"></span></p>
+                        <p><strong>Project:</strong> <span id="import-insomnia-projectname"></span></p>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn-cancel" id="btn-cancel-import-insomnia">Cancel</button>
-                    <button class="btn-primary" id="btn-confirm-import-insomnia">Import</button>
+                    <button class="btn-primary" id="btn-confirm-import-insomnia" disabled>Import as New Project</button>
                 </div>
             </div>
         </div>
@@ -120,11 +123,11 @@
                     <div class="tab-help" style="margin-bottom: 1rem;">
                         💡 Your API collection exported in Insomnia format. Copy or download.
                     </div>
-                    <pre id="insomnia-export-preview" style="background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow-x: auto; max-height: 400px; font-size: 0.875rem;"></pre>
+                    <textarea id="export-insomnia-textarea" readonly style="width: 100%; min-height: 400px; max-height: 500px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; padding: 1rem; color: var(--text-main); font-family: var(--font-mono); font-size: 0.875rem;"></textarea>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn-primary" id="btn-download-insomnia">💾 Download JSON</button>
-                    <button class="btn-primary" id="btn-copy-insomnia">📋 Copy</button>
+                    <button class="btn-primary" id="btn-download-export-insomnia">💾 Download</button>
+                    <button class="btn-primary" id="btn-copy-export-insomnia">📋 Copy</button>
                     <button class="btn-cancel" id="btn-close-export-insomnia2">Close</button>
                 </div>
             </div>
@@ -347,7 +350,7 @@
     <div class="modal" id="share-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Share Project</h3>
+                <h3>🔗 Share Project</h3>
                 <button class="modal-close" id="btn-close-share">&times;</button>
             </div>
             <div class="modal-body">
@@ -359,10 +362,39 @@
                         <option value="168">7 Days</option>
                     </select>
                 </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted);">
+                        <input type="checkbox" id="share-readonly" checked> Read Only
+                    </label>
+                </div>
                 <button class="btn-primary" id="btn-create-share" style="width: 100%;">Generate Link</button>
                 <div id="share-url-container" style="display: none; margin-top: 1rem;">
                     <input type="text" id="share-url-input" readonly class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px;">
                 </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="btn-cancel-share">Cancel</button>
+                <button class="btn-primary" id="btn-copy-share" style="display: none;">📋 Copy Link</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Share Modal -->
+    <div class="modal" id="import-share-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📥 Import Shared Project</h3>
+                <button class="modal-close" id="btn-close-import-share">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="tab-help" style="margin-bottom: 1rem;">
+                    💡 Paste the share URL or ID below to import a shared project.
+                </div>
+                <input type="text" id="import-share-input" placeholder="Paste share URL or ID..." class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px;">
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" id="btn-cancel-import-share">Cancel</button>
+                <button class="btn-primary" id="btn-confirm-import-share">Import Project</button>
             </div>
         </div>
     </div>
