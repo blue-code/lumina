@@ -174,6 +174,7 @@ class LuminaApp {
             const data = await response.json();
             this.folderTree = data.tree;
             this.renderFolderTree();
+            this.updateSelectedFolderIndicator();
         } catch (error) {
             console.error('Failed to load folder tree:', error);
         }
@@ -266,6 +267,7 @@ class LuminaApp {
             document.querySelectorAll('.tree-folder-header').forEach(h => h.classList.remove('active'));
             document.querySelectorAll('.tree-request').forEach(r => r.classList.remove('active'));
             headerDiv.classList.add('active');
+            this.updateSelectedFolderIndicator();
         });
 
         folderDiv.appendChild(headerDiv);
@@ -317,7 +319,12 @@ class LuminaApp {
             reqDiv.classList.remove('dragging');
         });
 
-        reqDiv.addEventListener('click', () => this.selectRequest(request.id));
+        reqDiv.addEventListener('click', () => {
+            this.selectRequest(request.id);
+            // Clear folder selection when a request is selected
+            this.currentFolder = null;
+            this.updateSelectedFolderIndicator();
+        });
 
         parentEl.appendChild(reqDiv);
     }
@@ -509,12 +516,27 @@ class LuminaApp {
         }
     }
 
-    async createNewRequest() {
-        const name = prompt('Enter request name:');
-        if (!name) return;
+    updateSelectedFolderIndicator() {
+        const indicator = document.getElementById('selected-folder-indicator');
+        const folderNameSpan = document.getElementById('selected-folder-name');
 
+        if (!indicator || !folderNameSpan) return;
+
+        if (this.currentFolder) {
+            indicator.style.display = 'block';
+            folderNameSpan.textContent = this.currentFolder.name;
+        } else {
+            indicator.style.display = 'none';
+        }
+    }
+
+    async createNewRequest() {
         // 현재 폴더가 없으면 루트 폴더 사용
         const targetFolder = this.currentFolder || this.folderTree;
+        const folderName = targetFolder.name;
+
+        const name = prompt(`Enter request name:\n(Will be created in: ${folderName})`);
+        if (!name) return;
 
         try {
             const response = await fetch(`${API_BASE}/folders/${targetFolder.id}/requests`, {
