@@ -78,15 +78,23 @@ class InsomniaConverter:
         # URL
         request.url = insomnia_req.get('url', '')
 
-        # Headers
+        # Headers (disabled 파라미터 제외)
         headers = insomnia_req.get('headers', [])
         if isinstance(headers, list):
-            request.headers = {h.get('name', ''): h.get('value', '') for h in headers if h.get('name')}
+            request.headers = {
+                h.get('name', ''): h.get('value', '')
+                for h in headers
+                if h.get('name') and not h.get('disabled', False)
+            }
 
-        # Parameters (query params)
+        # Parameters (query params, disabled 파라미터 제외)
         parameters = insomnia_req.get('parameters', [])
         if isinstance(parameters, list):
-            request.params = {p.get('name', ''): p.get('value', '') for p in parameters if p.get('name')}
+            request.params = {
+                p.get('name', ''): p.get('value', '')
+                for p in parameters
+                if p.get('name') and not p.get('disabled', False)
+            }
 
         # Body
         body = insomnia_req.get('body', {})
@@ -100,12 +108,20 @@ class InsomniaConverter:
                 request.body_type = BodyType.FORM_URLENCODED
                 params = body.get('params', [])
                 if isinstance(params, list):
-                    request.body_form = {p.get('name', ''): p.get('value', '') for p in params if p.get('name')}
+                    request.body_form = {
+                        p.get('name', ''): p.get('value', '')
+                        for p in params
+                        if p.get('name') and not p.get('disabled', False)
+                    }
             elif mime_type == 'multipart/form-data':
                 request.body_type = BodyType.FORM_DATA
                 params = body.get('params', [])
                 if isinstance(params, list):
-                    request.body_form = {p.get('name', ''): p.get('value', '') for p in params if p.get('name')}
+                    request.body_form = {
+                        p.get('name', ''): p.get('value', '')
+                        for p in params
+                        if p.get('name') and not p.get('disabled', False)
+                    }
             else:
                 request.body_type = BodyType.RAW
                 request.body_raw = body.get('text', '')
