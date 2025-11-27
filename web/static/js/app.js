@@ -31,6 +31,9 @@ class LuminaApp {
         // New Folder 버튼
         document.getElementById('btn-new-folder').addEventListener('click', () => this.createNewFolder());
 
+        // Delete Folder 버튼
+        document.getElementById('btn-delete-folder').addEventListener('click', () => this.deleteCurrentFolder());
+
         // New Request 버튼
         document.getElementById('btn-new-request').addEventListener('click', () => this.createNewRequest());
 
@@ -583,6 +586,33 @@ class LuminaApp {
             await this.loadFolderTree();
         } catch (error) {
             console.error('Failed to delete folder:', error);
+        }
+    }
+
+    async deleteCurrentFolder() {
+        if (!this.currentFolder) {
+            alert('Please select a folder to delete.');
+            return;
+        }
+        
+        // Check if it's root
+        if (this.folderTree && this.currentFolder.id === this.folderTree.id) {
+            alert('Cannot delete root folder.');
+            return;
+        }
+
+        if (!confirm(`Delete folder "${this.currentFolder.name}" and all its contents? This cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            await this.deleteFolder(this.currentFolder.id);
+            this.currentFolder = null;
+            this.updateSelectedFolderIndicator();
+            alert('Folder deleted successfully');
+        } catch (error) {
+            console.error('Failed to delete folder:', error);
+            alert('Failed to delete folder');
         }
     }
 
