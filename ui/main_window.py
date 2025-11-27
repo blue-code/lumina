@@ -538,11 +538,15 @@ class MainWindow(QMainWindow):
                      raise ValueError("Invalid Insomnia export file.")
 
                 from utils.insomnia_converter import InsomniaConverter
-                imported_folder = InsomniaConverter.import_from_insomnia(data)
+                imported_folder, global_vars = InsomniaConverter.import_from_insomnia(data)
 
                 if imported_folder:
                     # 루트 폴더에 임포트된 폴더 추가
                     self.project_manager.root_folder.add_folder(imported_folder)
+                    
+                    # 전역 변수 업데이트
+                    if global_vars:
+                        self.project_manager.env_manager.global_environment.variables.update(global_vars)
 
                     # UI 갱신
                     self.load_project_data()

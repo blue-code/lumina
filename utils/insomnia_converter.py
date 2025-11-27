@@ -11,7 +11,7 @@ class InsomniaConverter:
     """Insomnia 형식 변환기"""
 
     @staticmethod
-    def import_from_insomnia(insomnia_data: Dict[str, Any]) -> RequestFolder:
+    def import_from_insomnia(insomnia_data: Dict[str, Any]) -> tuple[RequestFolder, Dict[str, str]]:
         """
         Insomnia JSON 데이터를 Lumina RequestFolder로 변환
 
@@ -19,7 +19,7 @@ class InsomniaConverter:
             insomnia_data: Insomnia export JSON
 
         Returns:
-            RequestFolder: 변환된 폴더
+            Tuple[RequestFolder, Dict[str, str]]: 변환된 폴더와 전역 변수
         """
         resources = insomnia_data.get('resources', [])
 
@@ -80,7 +80,18 @@ class InsomniaConverter:
                 
                 parent_folder.add_request(request)
 
-        return root_folder
+        # 4. 환경 변수 추출 (Base Environment)
+        global_vars = {}
+        for resource in resources:
+            if resource.get('_type') == 'environment':
+                # Base Environment는 parentId가 워크스페이스 ID임
+                if resource.get('parentId') == workspace_id:
+                    env_data = resource.get('data', {})
+                    for k, v in env_data.items():
+                        global_vars[k] = str(v)
+                    break
+
+        return root_folder, global_vars
 
     @staticmethod
     def _convert_insomnia_request(insomnia_req: Dict[str, Any]) -> RequestModel:

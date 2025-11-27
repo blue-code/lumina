@@ -541,10 +541,14 @@ class LuminaWebServer:
 
             try:
                 from utils.insomnia_converter import InsomniaConverter
-                imported_folder = InsomniaConverter.import_from_insomnia(insomnia_data)
+                imported_folder, global_vars = InsomniaConverter.import_from_insomnia(insomnia_data)
 
                 # 폴더 추가
                 pm.root_folder.add_folder(imported_folder)
+                
+                # 전역 변수 업데이트
+                if global_vars:
+                    pm.env_manager.global_environment.variables.update(global_vars)
 
                 # 모든 요청 개수 계산
                 all_requests = pm.get_all_requests()
