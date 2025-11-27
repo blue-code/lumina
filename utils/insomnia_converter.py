@@ -23,43 +23,62 @@ class InsomniaConverter:
         """
         resources = insomnia_data.get('resources', [])
 
-        # ID 매핑 (Insomnia ID -> Lumina 객체)
-        id_mapping = {}
+        # 워크스페이스 찾기
+        workspace = None
+        for resource in resources:
+            if resource.get('_type') == 'workspace':
+                workspace = resource
+                break
+        
+        root_name = workspace.get('name', 'Imported from Insomnia') if workspace else 'Imported from Insomnia'
+        root_folder = RequestFolder(root_name)
+        
+        workspace_id = workspace.get('_id') if workspace else None
 
-        # 폴더 먼저 생성
+        # 폴더 매핑 (ID -> Folder)
         folders = {}
-        root_folder = RequestFolder("Imported from Insomnia")
         folders['__root__'] = root_folder
+        if workspace_id:
+            folders[workspace_id] = root_folder
 
-        # 폴더 생성
+        # 1. 폴더 생성 (Request Groups)
         for resource in resources:
             if resource.get('_type') == 'request_group':
                 folder = RequestFolder(resource.get('name', 'Unnamed Folder'))
                 folder.id = resource.get('_id', str(uuid.uuid4()))
-                id_mapping[resource['_id']] = folder
                 folders[resource['_id']] = folder
 
-        # 요청 생성 및 폴더에 할당
-        for resource in resources:
-            if resource.get('_type') == 'request':
-                request = InsomniaConverter._convert_insomnia_request(resource)
-
-                # 부모 폴더 찾기
-                parent_id = resource.get('parentId', '__root__')
-                parent_folder = folders.get(parent_id, root_folder)
-                parent_folder.add_request(request)
-
-        # 폴더 계층 구조 구성
+        # 2. 폴더 계층 구조 연결
         for resource in resources:
             if resource.get('_type') == 'request_group':
                 folder_id = resource['_id']
-                parent_id = resource.get('parentId', '__root__')
+                parent_id = resource.get('parentId')
 
                 if folder_id in folders:
                     folder = folders[folder_id]
-                    parent = folders.get(parent_id, root_folder)
-                    if folder != parent:  # 자기 자신이 아닌 경우만
-                        parent.add_folder(folder)
+                    # 부모가 없거나 워크스페이스면 루트에 추가
+                    if not parent_id or parent_id == workspace_id:
+                        parent_folder = root_folder
+                    else:
+                        parent_folder = folders.get(parent_id, root_folder)
+                    
+                    # 루트가 자기 자신이 아니고, 부모의 자식에 아직 없으면 추가
+                    if folder != parent_folder and folder not in parent_folder.folders:
+                        parent_folder.add_folder(folder)
+
+        # 3. 요청 생성 및 폴더에 할당
+        for resource in resources:
+            if resource.get('_type') == 'request':
+                request = InsomniaConverter._convert_insomnia_request(resource)
+                parent_id = resource.get('parentId')
+                
+                # 부모가 없거나 워크스페이스면 루트에 추가
+                if not parent_id or parent_id == workspace_id:
+                    parent_folder = root_folder
+                else:
+                    parent_folder = folders.get(parent_id, root_folder)
+                
+                parent_folder.add_request(request)
 
         return root_folder
 
@@ -160,9 +179,23 @@ class InsomniaConverter:
             Dict: Insomnia export JSON
         """
         resources = []
+        
+        # 워크스페이스 생성
+        workspace_id = f"wrk_{str(uuid.uuid4()).replace('-', '')}"
+        workspace = {
+            "_type": "workspace",
+            "_id": workspace_id,
+            "name": folder.name if folder.name != "Root" else "Lumina Export",
+            "description": "Exported from Lumina",
+            "parentId": None,
+            "scope": "collection",
+            "created": 1600000000000, # Dummy timestamp
+            "modified": 1600000000000
+        }
+        resources.append(workspace)
 
-        # 재귀적으로 폴더와 요청 변환
-        InsomniaConverter._export_folder_recursive(folder, resources, None)
+        # 재귀적으로 폴더와 요청 변환 (워크스페이스를 부모로 설정)
+        InsomniaConverter._export_folder_recursive(folder, resources, workspace_id)
 
         return {
             "_type": "export",

@@ -123,6 +123,10 @@ class MainWindow(QMainWindow):
         new_action.triggered.connect(self.new_project)
         file_menu.addAction(new_action)
 
+        rename_action = QAction("Rename Project...", self)
+        rename_action.triggered.connect(self.rename_project)
+        file_menu.addAction(rename_action)
+
         open_action = QAction("Open Project...", self)
         open_action.setShortcut("Ctrl+O")
         open_action.triggered.connect(self.open_project)
@@ -145,6 +149,22 @@ class MainWindow(QMainWindow):
         import_action.setShortcut("Ctrl+I")
         import_action.triggered.connect(self.import_from_markdown)
         file_menu.addAction(import_action)
+
+        import_postman_action = QAction("Import from Postman / OpenAPI...", self)
+        import_postman_action.triggered.connect(self.import_from_postman_openapi)
+        file_menu.addAction(import_postman_action)
+
+        import_insomnia_action = QAction("Import from Insomnia...", self)
+        import_insomnia_action.triggered.connect(self.import_from_insomnia)
+        file_menu.addAction(import_insomnia_action)
+
+        export_postman_action = QAction("Export to Postman...", self)
+        export_postman_action.triggered.connect(self.export_to_postman)
+        file_menu.addAction(export_postman_action)
+
+        export_insomnia_action = QAction("Export to Insomnia...", self)
+        export_insomnia_action.triggered.connect(self.export_to_insomnia)
+        file_menu.addAction(export_insomnia_action)
 
         export_action = QAction("Export to Markdown...", self)
         export_action.setShortcut("Ctrl+E")
@@ -364,6 +384,20 @@ class MainWindow(QMainWindow):
             self.load_project_data()
             self.setWindowTitle("Lumina ✨")
 
+    def rename_project(self):
+        """프로젝트 이름 변경"""
+        from PyQt5.QtWidgets import QInputDialog
+        
+        text, ok = QInputDialog.getText(self, 'Rename Project', 'Enter new project name:', 
+                                      text=self.project_manager.project_name)
+        
+        if ok and text:
+            self.project_manager.project_name = text
+            # UI 업데이트
+            self.project_label.setText(f"Project: {self.project_manager.project_name}")
+            self.setWindowTitle(f"Lumina ✨ - {self.project_manager.project_name}")
+            self.statusBar.showMessage(f"Project renamed to: {text}")
+
     def open_project(self):
         """프로젝트 열기"""
         file_path, _ = QFileDialog.getOpenFileName(
@@ -438,6 +472,141 @@ class MainWindow(QMainWindow):
                 self.statusBar.showMessage(f"Imported from: {file_path}")
             except Exception as e:
                 QMessageBox.critical(self, "Error", f"Failed to import markdown:\n{str(e)}")
+
+    def import_from_postman_openapi(self):
+        """Postman 또는 OpenAPI 파일에서 임포트"""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Import from Postman / OpenAPI", "", "OpenAPI/Postman Files (*.json *.yaml *.yml);;All Files (*)"
+        )
+
+        if file_path:
+            try:
+                imported_folder = None
+                is_json = file_path.lower().endswith('.json')
+                
+                if is_json:
+                    # JSON 파일: Postman인지 OpenAPI인지 확인
+                    import json
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    
+                    # Postman 컬렉션 확인 (info > _postman_id 또는 schema 체크)
+                    is_postman = 'info' in data and ('_postman_id' in data['info'] or 'schema' in data.get('info', {}))
+                    
+                    if is_postman:
+                        from utils.postman_converter import PostmanConverter
+                        imported_folder = PostmanConverter.import_from_postman(data)
+                    else:
+                        # Postman이 아니면 OpenAPI로 간주
+                        from utils.openapi_converter import OpenAPIConverter
+                        imported_folder = OpenAPIConverter.import_from_file(file_path)
+                else:
+                    # YAML 파일 등: OpenAPI로 처리
+                    from utils.openapi_converter import OpenAPIConverter
+                    imported_folder = OpenAPIConverter.import_from_file(file_path)
+
+                if imported_folder:
+                    # 루트 폴더에 임포트된 폴더 추가
+                    self.project_manager.root_folder.add_folder(imported_folder)
+
+                    # UI 갱신
+                    self.load_project_data()
+
+                    QMessageBox.information(
+                        self, "Success",
+                        f"Successfully imported requests from {file_path}."
+                    )
+                    self.statusBar.showMessage(f"Imported from: {file_path}")
+                
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to import:\n{str(e)}")
+
+    def import_from_insomnia(self):
+        """Insomnia 파일에서 임포트"""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Import from Insomnia", "", "Insomnia Export (*.json);;All Files (*)"
+        )
+
+        if file_path:
+            try:
+                import json
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                
+                # Insomnia 파일 확인 (_type: export 체크)
+                if data.get('_type') != 'export' and 'resources' not in data:
+                     raise ValueError("Invalid Insomnia export file.")
+
+                from utils.insomnia_converter import InsomniaConverter
+                imported_folder = InsomniaConverter.import_from_insomnia(data)
+
+                if imported_folder:
+                    # 루트 폴더에 임포트된 폴더 추가
+                    self.project_manager.root_folder.add_folder(imported_folder)
+
+                    # UI 갱신
+                    self.load_project_data()
+
+                    QMessageBox.information(
+                        self, "Success",
+                        f"Successfully imported requests from {file_path}."
+                    )
+                    self.statusBar.showMessage(f"Imported from: {file_path}")
+                
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to import:\n{str(e)}")
+
+    def export_to_postman(self):
+        """Postman 파일로 내보내기"""
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Export to Postman", "", "Postman Collection (*.json);;All Files (*)"
+        )
+
+        if file_path:
+            try:
+                from utils.postman_converter import PostmanConverter
+                import json
+
+                # 현재 편집 내용 저장
+                if self.current_request:
+                    self.request_editor.save_to_request()
+
+                # 내보내기
+                collection = PostmanConverter.export_to_postman(self.project_manager.root_folder)
+                
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    json.dump(collection, f, indent=2, ensure_ascii=False)
+
+                QMessageBox.information(self, "Success", "Successfully exported to Postman.")
+                self.statusBar.showMessage(f"Exported to: {file_path}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to export to Postman:\n{str(e)}")
+
+    def export_to_insomnia(self):
+        """Insomnia 파일로 내보내기"""
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Export to Insomnia", "", "Insomnia Export (*.json);;All Files (*)"
+        )
+
+        if file_path:
+            try:
+                from utils.insomnia_converter import InsomniaConverter
+                import json
+
+                # 현재 편집 내용 저장
+                if self.current_request:
+                    self.request_editor.save_to_request()
+
+                # 내보내기
+                export_data = InsomniaConverter.export_to_insomnia(self.project_manager.root_folder)
+                
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    json.dump(export_data, f, indent=2, ensure_ascii=False)
+
+                QMessageBox.information(self, "Success", "Successfully exported to Insomnia.")
+                self.statusBar.showMessage(f"Exported to: {file_path}")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to export to Insomnia:\n{str(e)}")
 
     def export_to_markdown(self):
         """마크다운 파일로 내보내기"""

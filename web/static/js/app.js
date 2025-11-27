@@ -53,6 +53,7 @@ class LuminaApp {
             e.stopPropagation();
             this.toggleMoreMenu();
         });
+        document.getElementById('menu-rename-project').addEventListener('click', () => this.renameCurrentProject());
         document.getElementById('menu-import-insomnia').addEventListener('click', () => this.showImportInsomniaModal());
         document.getElementById('menu-export-insomnia').addEventListener('click', () => this.showExportInsomniaModal());
         document.getElementById('menu-import-postman').addEventListener('click', () => this.showImportPostmanModal());
@@ -1181,6 +1182,34 @@ class LuminaApp {
     // 프로젝트 관리
     // ==================
 
+    async renameCurrentProject() {
+        if (!this.currentProject) return;
+
+        const newName = prompt("Enter new project name:", this.currentProject.name);
+        if (!newName || newName.trim() === "" || newName === this.currentProject.name) return;
+
+        try {
+            const response = await fetch(`${API_BASE}/projects/${this.currentProject.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newName })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.currentProject = result.project;
+                await this.loadProjects();
+                alert('Project renamed successfully');
+            } else {
+                alert(`Failed to rename project: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Failed to rename project:', error);
+            alert('Failed to rename project');
+        }
+    }
+
     async loadProjects() {
         try {
             const response = await fetch(`${API_BASE}/projects`);
@@ -1737,7 +1766,7 @@ class LuminaApp {
                 document.getElementById('btn-confirm-import-insomnia').disabled = false;
 
                 // 파일 내용 저장
-                this.selectedInsomniaFile = content;
+                this.selectedInsomniaFile = jsonData;
             } catch (error) {
                 alert('유효하지 않은 JSON 파일입니다.');
                 document.getElementById('import-insomnia-preview').style.display = 'none';
@@ -1762,20 +1791,17 @@ class LuminaApp {
             const response = await fetch(`${API_BASE}/import/insomnia`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: this.selectedInsomniaFile })
+                body: JSON.stringify({ data: this.selectedInsomniaFile })
             });
 
             const result = await response.json();
 
             if (result.success) {
-                alert(`프로젝트 "${result.project.name}"를 성공적으로 가져왔습니다! (${result.imported_count}개 요청)`);
+                alert(`폴더 "${result.folder_name}"를 성공적으로 가져왔습니다! (${result.imported_count}개 요청)`);
                 this.hideImportInsomniaModal();
 
-                // 프로젝트 목록 새로고침
-                await this.loadProjects();
-
-                // 가져온 프로젝트로 전환
-                await this.switchToProject(result.project.id);
+                // 폴더 트리 새로고침
+                await this.loadFolderTree();
             } else {
                 alert(`Insomnia JSON 가져오기 실패: ${result.error}`);
                 btn.disabled = false;
@@ -1874,30 +1900,34 @@ class LuminaApp {
         // 파일 읽기
         const reader = new FileReader();
         reader.onload = (e) => {
+            const content = e.target.result;
+            let collectionName = 'Unknown';
+            
             try {
-                const content = e.target.result;
+                // JSON 파싱 시도
                 const jsonData = JSON.parse(content);
-
-                // Collection 이름 찾기
-                let collectionName = 'Unknown Collection';
+                
+                // Postman 또는 OpenAPI JSON 확인
                 if (jsonData.info && jsonData.info.name) {
-                    collectionName = jsonData.info.name;
+                    collectionName = jsonData.info.name + " (Postman)";
+                } else if (jsonData.info && jsonData.info.title) {
+                    collectionName = jsonData.info.title + " (OpenAPI JSON)";
+                } else {
+                    collectionName = "JSON File";
                 }
-
-                // 미리보기 표시
-                document.getElementById('import-postman-filename').textContent = file.name;
-                document.getElementById('import-postman-collectionname').textContent = collectionName;
-                document.getElementById('import-postman-preview').style.display = 'block';
-                document.getElementById('btn-confirm-import-postman').disabled = false;
-
-                // 파일 내용 저장
+                
                 this.selectedPostmanFile = jsonData;
             } catch (error) {
-                alert('유효하지 않은 JSON 파일입니다.');
-                document.getElementById('import-postman-preview').style.display = 'none';
-                document.getElementById('btn-confirm-import-postman').disabled = true;
-                this.selectedPostmanFile = null;
+                // JSON 파싱 실패 -> YAML 등 Raw 텍스트로 간주
+                this.selectedPostmanFile = content;
+                collectionName = "YAML / Raw Content";
             }
+
+            // 미리보기 표시
+            document.getElementById('import-postman-filename').textContent = file.name;
+            document.getElementById('import-postman-collectionname').textContent = collectionName;
+            document.getElementById('import-postman-preview').style.display = 'block';
+            document.getElementById('btn-confirm-import-postman').disabled = false;
         };
         reader.readAsText(file);
     }

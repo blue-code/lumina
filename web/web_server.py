@@ -35,15 +35,24 @@ class LuminaWebServer:
                         static_folder='static')
         CORS(self.app, supports_credentials=True)  # CORS with credentials
 
-        # 세션 설정 (보안 강화)
-        self.app.config['SECRET_KEY'] = os.urandom(24)
-        self.app.config['SESSION_TYPE'] = 'filesystem'
-        self.app.config['SESSION_COOKIE_HTTPONLY'] = True
-        self.app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-
         # 데이터 디렉토리 설정
         self.data_dir = Path('.lumina_data')
         self.data_dir.mkdir(exist_ok=True)
+
+        # 세션 설정 (보안 강화)
+        secret_file = self.data_dir / '.secret_key'
+        if secret_file.exists():
+            with open(secret_file, 'rb') as f:
+                self.app.config['SECRET_KEY'] = f.read()
+        else:
+            secret_key = os.urandom(24)
+            self.app.config['SECRET_KEY'] = secret_key
+            with open(secret_file, 'wb') as f:
+                f.write(secret_key)
+        
+        self.app.config['SESSION_TYPE'] = 'filesystem'
+        self.app.config['SESSION_COOKIE_HTTPONLY'] = True
+        self.app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
         # 세션별 프로젝트 매니저 저장소 (thread-safe)
         # 구조: {session_id: {project_id: ProjectManager}}
@@ -401,7 +410,8 @@ class LuminaWebServer:
         @self.app.route('/api/requests/<request_id>', methods=['DELETE'])
         def delete_request(request_id):
             pm = self.get_session_project_manager()
-            if pm.root_folder.remove_request(request_id):
+            # 재귀적으로 검색하여 삭제
+            if pm.remove_request_recursive(request_id):
                 return jsonify({'success': True})
             return jsonify({'error': 'Request not found'}), 404
 
@@ -562,30 +572,51 @@ class LuminaWebServer:
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
 
-        # API: Postman 임포트
+        # API: Postman/OpenAPI 임포트 (통합)
         @self.app.route('/api/import/postman', methods=['POST'])
         def import_postman():
             pm = self.get_session_project_manager()
-            data = request.json
-            postman_data = data.get('data')
-            if not postman_data:
-                return jsonify({'error': 'Postman data required'}), 400
+            req_data = request.json
+            data = req_data.get('data')
+            if not data:
+                return jsonify({'error': 'Data required'}), 400
 
             try:
-                from utils.postman_converter import PostmanConverter
-                imported_folder = PostmanConverter.import_from_postman(postman_data)
+                imported_folder = None
+                
+                # 1. Dictionary 인 경우 (JSON으로 파싱된 상태)
+                if isinstance(data, dict):
+                    # Postman 확인
+                    is_postman = 'info' in data and ('_postman_id' in data['info'] or 'schema' in data.get('info', {}))
+                    
+                    if is_postman:
+                        from utils.postman_converter import PostmanConverter
+                        imported_folder = PostmanConverter.import_from_postman(data)
+                    else:
+                        # JSON 형식의 OpenAPI로 간주
+                        from utils.openapi_converter import OpenAPIConverter
+                        imported_folder = OpenAPIConverter._parse_openapi_data(data)
+                        
+                # 2. String 인 경우 (YAML 또는 Raw JSON 문자열)
+                elif isinstance(data, str):
+                    from utils.openapi_converter import OpenAPIConverter
+                    imported_folder = OpenAPIConverter.import_from_content(data)
+                
+                else:
+                    return jsonify({'error': 'Invalid data format'}), 400
 
-                # 폴더 추가
-                pm.root_folder.add_folder(imported_folder)
+                if imported_folder:
+                    # 폴더 추가
+                    pm.root_folder.add_folder(imported_folder)
 
-                # 모든 요청 개수 계산
-                all_requests = pm.get_all_requests()
-
-                return jsonify({
-                    'success': True,
-                    'imported_count': len(imported_folder.requests),
-                    'folder_name': imported_folder.name
-                })
+                    return jsonify({
+                        'success': True,
+                        'imported_count': len(imported_folder.requests),
+                        'folder_name': imported_folder.name
+                    })
+                else:
+                     return jsonify({'error': 'Failed to parse import data'}), 400
+                     
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
 
