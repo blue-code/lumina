@@ -3,6 +3,8 @@ Insomnia Import/Export Converter
 Insomnia 형식과 Lumina 형식 간 변환
 """
 import uuid
+import time
+from datetime import datetime
 from typing import Dict, List, Any
 from models.request_model import RequestModel, RequestFolder, HttpMethod, BodyType, AuthType
 
@@ -179,85 +181,105 @@ class InsomniaConverter:
         return request
 
     @staticmethod
-    def export_to_insomnia(folder: RequestFolder) -> Dict[str, Any]:
+    def export_to_insomnia(folder: RequestFolder, project_name: str = None) -> Dict[str, Any]:
         """
         Lumina RequestFolder를 Insomnia JSON 형식으로 변환
 
         Args:
             folder: 변환할 폴더
+            project_name: 프로젝트 이름 (워크스페이스 이름으로 사용)
 
         Returns:
             Dict: Insomnia export JSON
         """
         resources = []
-        
+        current_time = int(time.time() * 1000)  # 밀리초 단위 타임스탬프
+
         # 워크스페이스 생성
         workspace_id = f"wrk_{str(uuid.uuid4()).replace('-', '')}"
+        workspace_name = project_name or (folder.name if folder.name != "Root" else "Lumina Export")
         workspace = {
-            "_type": "workspace",
             "_id": workspace_id,
-            "name": folder.name if folder.name != "Root" else "Lumina Export",
-            "description": "Exported from Lumina",
+            "_type": "workspace",
             "parentId": None,
-            "scope": "collection",
-            "created": 1600000000000, # Dummy timestamp
-            "modified": 1600000000000
+            "modified": current_time,
+            "created": current_time,
+            "name": workspace_name,
+            "description": "Exported from Lumina",
+            "scope": "collection"
         }
         resources.append(workspace)
 
         # 재귀적으로 폴더와 요청 변환 (워크스페이스를 부모로 설정)
-        InsomniaConverter._export_folder_recursive(folder, resources, workspace_id)
+        InsomniaConverter._export_folder_recursive(folder, resources, workspace_id, current_time)
+
+        # ISO 8601 형식의 날짜 생성
+        export_date = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
 
         return {
             "_type": "export",
             "__export_format": 4,
-            "__export_date": None,
-            "__export_source": "lumina",
+            "__export_date": export_date,
+            "__export_source": "lumina.desktop.app:v1.0",
             "resources": resources
         }
 
     @staticmethod
-    def _export_folder_recursive(folder: RequestFolder, resources: List[Dict], parent_id: str = None):
+    def _export_folder_recursive(folder: RequestFolder, resources: List[Dict], parent_id: str = None, base_time: int = None):
         """재귀적으로 폴더와 요청을 Insomnia 형식으로 변환"""
+        if base_time is None:
+            base_time = int(time.time() * 1000)
+
         # 루트 폴더가 아닌 경우 폴더 자체를 추가
         current_parent_id = parent_id
         if folder.name != "Root":
             folder_resource = {
-                "_type": "request_group",
                 "_id": folder.id,
-                "name": folder.name,
+                "_type": "request_group",
                 "parentId": parent_id,
+                "modified": base_time,
+                "created": base_time,
+                "name": folder.name,
+                "description": "",
                 "environment": {},
                 "environmentPropertyOrder": None,
-                "metaSortKey": -1
+                "metaSortKey": -base_time
             }
             resources.append(folder_resource)
             current_parent_id = folder.id
 
         # 요청 변환
-        for request in folder.requests:
-            request_resource = InsomniaConverter._convert_to_insomnia_request(request, current_parent_id)
+        for idx, request in enumerate(folder.requests):
+            request_resource = InsomniaConverter._convert_to_insomnia_request(
+                request, current_parent_id, base_time - idx
+            )
             resources.append(request_resource)
 
         # 하위 폴더 재귀 처리
         for sub_folder in folder.folders:
-            InsomniaConverter._export_folder_recursive(sub_folder, resources, current_parent_id)
+            InsomniaConverter._export_folder_recursive(sub_folder, resources, current_parent_id, base_time)
 
     @staticmethod
-    def _convert_to_insomnia_request(request: RequestModel, parent_id: str = None) -> Dict[str, Any]:
+    def _convert_to_insomnia_request(request: RequestModel, parent_id: str = None, timestamp: int = None) -> Dict[str, Any]:
         """Lumina RequestModel을 Insomnia 요청으로 변환"""
+        if timestamp is None:
+            timestamp = int(time.time() * 1000)
+
         insomnia_req = {
-            "_type": "request",
             "_id": request.id,
+            "_type": "request",
             "parentId": parent_id,
-            "name": request.name,
+            "modified": timestamp,
+            "created": timestamp,
             "url": request.url,
+            "name": request.name,
+            "description": "",
             "method": request.method.value,
-            "headers": [],
-            "parameters": [],
             "body": {},
+            "parameters": [],
+            "headers": [],
             "authentication": {},
-            "metaSortKey": -1,
+            "metaSortKey": -timestamp,
             "isPrivate": False,
             "settingStoreCookies": True,
             "settingSendCookies": True,
@@ -269,13 +291,23 @@ class InsomniaConverter:
 
         # Headers
         insomnia_req['headers'] = [
-            {"name": key, "value": value, "disabled": False}
+            {
+                "id": f"pair_{str(uuid.uuid4()).replace('-', '')}",
+                "name": key,
+                "value": value,
+                "disabled": False
+            }
             for key, value in request.headers.items()
         ]
 
         # Parameters
         insomnia_req['parameters'] = [
-            {"name": key, "value": value, "disabled": False}
+            {
+                "id": f"pair_{str(uuid.uuid4()).replace('-', '')}",
+                "name": key,
+                "value": value,
+                "disabled": False
+            }
             for key, value in request.params.items()
         ]
 
@@ -289,7 +321,12 @@ class InsomniaConverter:
             insomnia_req['body'] = {
                 "mimeType": "application/x-www-form-urlencoded",
                 "params": [
-                    {"name": key, "value": value, "disabled": False}
+                    {
+                        "id": f"pair_{str(uuid.uuid4()).replace('-', '')}",
+                        "name": key,
+                        "value": value,
+                        "disabled": False
+                    }
                     for key, value in request.body_form.items()
                 ]
             }
@@ -297,7 +334,13 @@ class InsomniaConverter:
             insomnia_req['body'] = {
                 "mimeType": "multipart/form-data",
                 "params": [
-                    {"name": key, "value": value, "disabled": False, "type": "text"}
+                    {
+                        "id": f"pair_{str(uuid.uuid4()).replace('-', '')}",
+                        "name": key,
+                        "value": value,
+                        "disabled": False,
+                        "type": "text"
+                    }
                     for key, value in request.body_form.items()
                 ]
             }

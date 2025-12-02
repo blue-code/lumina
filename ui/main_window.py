@@ -602,8 +602,11 @@ class MainWindow(QMainWindow):
                     self.request_editor.save_to_request()
 
                 # 내보내기
-                export_data = InsomniaConverter.export_to_insomnia(self.project_manager.root_folder)
-                
+                export_data = InsomniaConverter.export_to_insomnia(
+                    self.project_manager.root_folder,
+                    self.project_manager.project_name
+                )
+
                 with open(file_path, 'w', encoding='utf-8') as f:
                     json.dump(export_data, f, indent=2, ensure_ascii=False)
 

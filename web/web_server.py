@@ -567,7 +567,7 @@ class LuminaWebServer:
             pm = self.get_session_project_manager()
             try:
                 from utils.insomnia_converter import InsomniaConverter
-                insomnia_data = InsomniaConverter.export_to_insomnia(pm.root_folder)
+                insomnia_data = InsomniaConverter.export_to_insomnia(pm.root_folder, pm.project_name)
                 return jsonify({
                     'success': True,
                     'data': insomnia_data,
