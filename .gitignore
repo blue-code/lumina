@@ -4,3 +4,9 @@ __pycache__/
 .DS_Store
 .env
 .lumina_data/
+.lumina_data/
+insomnia sample.json
+postman sample.yml
+.idea/
+projects/
+shared_projects/

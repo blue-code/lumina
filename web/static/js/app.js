@@ -57,6 +57,7 @@ class LuminaApp {
             this.toggleMoreMenu();
         });
         document.getElementById('menu-rename-project').addEventListener('click', () => this.renameCurrentProject());
+        document.getElementById('menu-import-openapi').addEventListener('click', () => this.showImportOpenApiModal());
         document.getElementById('menu-import-insomnia').addEventListener('click', () => this.showImportInsomniaModal());
         document.getElementById('menu-export-insomnia').addEventListener('click', () => this.showExportInsomniaModal());
         document.getElementById('menu-import-postman').addEventListener('click', () => this.showImportPostmanModal());
@@ -113,6 +114,11 @@ class LuminaApp {
         document.getElementById('btn-close-import-share').addEventListener('click', () => this.hideImportShareModal());
         document.getElementById('btn-cancel-import-share').addEventListener('click', () => this.hideImportShareModal());
         document.getElementById('btn-confirm-import-share').addEventListener('click', () => this.importShare());
+
+        // Import OpenAPI Modal
+        document.getElementById('btn-close-import-openapi').addEventListener('click', () => this.hideImportOpenApiModal());
+        document.getElementById('btn-cancel-import-openapi').addEventListener('click', () => this.hideImportOpenApiModal());
+        document.getElementById('btn-confirm-import-openapi').addEventListener('click', () => this.importOpenApi());
 
         // Global Constants 버튼
         document.getElementById('btn-global-constants').addEventListener('click', () => this.showGlobalConstantsModal());
@@ -594,7 +600,7 @@ class LuminaApp {
             alert('Please select a folder to delete.');
             return;
         }
-        
+
         // Check if it's root
         if (this.folderTree && this.currentFolder.id === this.folderTree.id) {
             alert('Cannot delete root folder.');
@@ -1932,11 +1938,11 @@ class LuminaApp {
         reader.onload = (e) => {
             const content = e.target.result;
             let collectionName = 'Unknown';
-            
+
             try {
                 // JSON 파싱 시도
                 const jsonData = JSON.parse(content);
-                
+
                 // Postman 또는 OpenAPI JSON 확인
                 if (jsonData.info && jsonData.info.name) {
                     collectionName = jsonData.info.name + " (Postman)";
@@ -1945,7 +1951,7 @@ class LuminaApp {
                 } else {
                     collectionName = "JSON File";
                 }
-                
+
                 this.selectedPostmanFile = jsonData;
             } catch (error) {
                 // JSON 파싱 실패 -> YAML 등 Raw 텍스트로 간주
@@ -2056,6 +2062,56 @@ class LuminaApp {
         setTimeout(() => {
             btn.textContent = originalText;
         }, 2000);
+    }
+
+    // ==================== OpenAPI Import Functions ====================
+
+    showImportOpenApiModal() {
+        document.getElementById('import-openapi-url').value = '';
+        document.getElementById('import-openapi-content').value = '';
+        this.showModal('import-openapi-modal');
+    }
+
+    hideImportOpenApiModal() {
+        this.hideModal('import-openapi-modal');
+    }
+
+    async importOpenApi() {
+        const url = document.getElementById('import-openapi-url').value.trim();
+        const content = document.getElementById('import-openapi-content').value.trim();
+
+        if (!url && !content) {
+            alert('Please enter a URL or paste OpenAPI content.');
+            return;
+        }
+
+        const btn = document.getElementById('btn-confirm-import-openapi');
+        btn.disabled = true;
+        btn.textContent = 'Importing...';
+
+        try {
+            const response = await fetch(`${API_BASE}/import/openapi`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url, content })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert(`Successfully imported "${result.folder_name}"! (${result.imported_count} requests)`);
+                this.hideImportOpenApiModal();
+                await this.loadFolderTree();
+            } else {
+                alert(`Import failed: ${result.error}`);
+            }
+        } catch (error) {
+            console.error('Failed to import OpenAPI:', error);
+            alert('An error occurred during import.');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Import';
+        }
     }
 
     setupResizers() {
