@@ -77,6 +77,10 @@ class LuminaWebServer:
         # 구조: {session_id: {project_id: HistoryManager}}
         self.histories: Dict[str, Dict[str, HistoryManager]] = {}
 
+        # 세션별 HTTP 클라이언트 저장소 (쿠키/세션 유지용)
+        # 구조: {session_id: {project_id: HttpClient}}
+        self.http_clients: Dict[str, Dict[str, HttpClient]] = {}
+
         # 세션 메타데이터 (마지막 접근 시간)
         self.session_metadata: Dict[str, Dict] = {}
 
@@ -146,8 +150,28 @@ class LuminaWebServer:
             return self.http_client
 
         # 세션별 HTTP 클라이언트 생성
-        pm = self.get_session_project_manager()
-        return HttpClient(pm.env_manager)
+        # 세션 ID 확인 (get_session_project_manager 에서 생성해주지만, 안전을 위해)
+        if 'session_id' not in session:
+            session['session_id'] = str(uuid.uuid4())
+        session_id = session['session_id']
+        
+        with self.sessions_lock:
+            # 세션 초기화
+            if session_id not in self.http_clients:
+                self.http_clients[session_id] = {}
+
+            # 활성 프로젝트 ID 가져오기
+            pm = self.get_session_project_manager()
+            # active_projects[session_id] 는 get_session_project_manager 호출 시 설정됨
+            active_project_id = self.active_projects.get(session_id)
+            
+            # 프로젝트별 HTTP 클라이언트 (없거나 환경 매니저가 변경되었을 수 있으므로 확인/생성)
+            # 노트: EnvironmentManager가 변경되면 HttpClient도 새로 만드는게 좋겠지만, 
+            # 여기서는 ProjectManager 인스턴스가 유지되므로 EnvironmentManager도 유지된다고 가정.
+            if active_project_id not in self.http_clients[session_id]:
+                self.http_clients[session_id][active_project_id] = HttpClient(pm.env_manager)
+            
+            return self.http_clients[session_id][active_project_id]
 
     def get_session_history_manager(self) -> HistoryManager:
         """현재 세션의 활성 프로젝트 히스토리 매니저 가져오기"""
@@ -286,6 +310,14 @@ class LuminaWebServer:
                     del self.histories[session_id]
                 if session_id in self.session_metadata:
                     del self.session_metadata[session_id]
+                if session_id in self.http_clients:
+                    # 세션 닫기
+                    for client in self.http_clients[session_id].values():
+                        try:
+                            client.close()
+                        except:
+                            pass
+                    del self.http_clients[session_id]
 
                 # 파일 삭제
                 session_file = self.data_dir / f'session_{session_id}.json'
@@ -934,6 +966,14 @@ class LuminaWebServer:
                 # 히스토리도 삭제
                 if session_id in self.histories and project_id in self.histories[session_id]:
                     del self.histories[session_id][project_id]
+
+                # HTTP 클라이언트도 삭제
+                if session_id in self.http_clients and project_id in self.http_clients[session_id]:
+                    try:
+                        self.http_clients[session_id][project_id].close()
+                    except:
+                        pass
+                    del self.http_clients[session_id][project_id]
 
                 # 활성 프로젝트였다면 다른 프로젝트로 전환 또는 None으로
                 if self.active_projects.get(session_id) == project_id:
