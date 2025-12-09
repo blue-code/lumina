@@ -50,9 +50,13 @@ class LuminaWebServer:
             with open(secret_file, 'wb') as f:
                 f.write(secret_key)
         
+        # Session settings (cross-site capable for API calls from other origins)
         self.app.config['SESSION_TYPE'] = 'filesystem'
         self.app.config['SESSION_COOKIE_HTTPONLY'] = True
-        self.app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+        self.app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+        self.app.config['SESSION_COOKIE_SECURE'] = False  # allow http during local dev
+        self.app.config['SESSION_COOKIE_NAME'] = 'lumina_session'
+        self.app.permanent_session_lifetime = timedelta(days=30)
 
         # 세션별 프로젝트 매니저 저장소 (thread-safe)
         # 구조: {session_id: {project_id: ProjectManager}}
@@ -323,6 +327,7 @@ class LuminaWebServer:
             if 'session_id' not in session:
                 session['session_id'] = str(uuid.uuid4())
             session.permanent = True
+            session.modified = True  # force Set-Cookie
             session_id = session['session_id']
 
             # Optionally store username for downstream use
@@ -348,7 +353,8 @@ class LuminaWebServer:
                 session_id,
                 max_age=60 * 60 * 24 * 30,  # 30 days
                 httponly=True,
-                samesite='Lax'
+                samesite='None',
+                secure=False
             )
             return resp
 
