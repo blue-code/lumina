@@ -316,6 +316,31 @@ class LuminaWebServer:
         def index():
             return render_template('index.html')
 
+        # 간단한 로그인/세션 초기화 엔드포인트
+        @self.app.route('/api/login', methods=['POST'])
+        def login():
+            # Create or reuse session id
+            if 'session_id' not in session:
+                session['session_id'] = str(uuid.uuid4())
+            session.permanent = True
+            session_id = session['session_id']
+
+            # Optionally store username for downstream use
+            payload = request.json or {}
+            if 'username' in payload:
+                session['username'] = payload.get('username')
+
+            pm = self.get_session_project_manager()
+
+            return jsonify({
+                'success': True,
+                'session_id': session_id,
+                'project': {
+                    'id': self.active_projects.get(session_id),
+                    'name': pm.project_name
+                }
+            })
+
         # API 문서 페이지
         @self.app.route('/docs')
         def api_docs():
