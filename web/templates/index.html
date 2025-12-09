@@ -251,9 +251,10 @@
 
             <!-- Tab Contents -->
             <div class="tab-content active" id="tab-params">
-                <div style="margin-bottom: 1rem;">
-                    <h4 style="margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">Current Parameters
-                    </h4>
+                <!-- Query Parameters Section -->
+                <div style="margin-bottom: 2rem;">
+                    <h4 style="margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">Query Parameters
+                        (URL)</h4>
                     <table class="key-value-table">
                         <thead>
                             <tr>
@@ -267,6 +268,31 @@
                             <!-- Params will be loaded here -->
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Body Parameters (Multipart) Section -->
+                <div style="margin-bottom: 2rem;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <h4 style="color: var(--text-muted); font-size: 0.9rem; margin: 0;">Body Parameters (Multipart
+                            Form)</h4>
+                        <!-- Maybe a checkbox to explicitly enable/disable if empty? -->
+                    </div>
+
+                    <div id="body-editor-form-data" class="body-editor">
+                        <table class="key-value-table">
+                            <thead>
+                                <tr>
+                                    <th>Key</th>
+                                    <th width="100">Type</th>
+                                    <th>Value</th>
+                                    <th width="40"><button class="btn-icon" onclick="app.addMultipartRow()">+</button>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="body-multipart-tbody"></tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <div class="params-history-section"
@@ -304,7 +330,6 @@
                             <option value="none">None</option>
                             <option value="raw">Raw (JSON/Text)</option>
                             <option value="form_urlencoded">x-www-form-urlencoded</option>
-                            <option value="form_data">Multipart Form</option>
                         </select>
                     </div>
                     <div class="body-actions" id="body-actions-raw" style="display: none;">
@@ -336,20 +361,7 @@
                     </table>
                 </div>
 
-                <!-- Multipart Form Editor -->
-                <div id="body-editor-form-data" class="body-editor hidden">
-                    <table class="key-value-table">
-                        <thead>
-                            <tr>
-                                <th>Key</th>
-                                <th width="100">Type</th>
-                                <th>Value</th>
-                                <th width="40"><button class="btn-icon" onclick="app.addMultipartRow()">+</button></th>
-                            </tr>
-                        </thead>
-                        <tbody id="body-multipart-tbody"></tbody>
-                    </table>
-                </div>
+                <!-- Multipart Form Editor Moved to Params Tab -->
             </div>
 
             <div class="tab-content" id="tab-auth">

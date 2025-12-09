@@ -389,7 +389,11 @@ class LuminaApp {
 
         // Body
         // document.getElementById('body-raw').value = this.currentRequest.body_raw || '';
+        // Body
+        // document.getElementById('body-raw').value = this.currentRequest.body_raw || '';
         this.renderBody();
+        // Multipart (always render in params tab)
+        this.renderMultipartTable(this.currentRequest.body_multipart);
 
         // Auth
         this.renderAuth();
@@ -775,10 +779,26 @@ class LuminaApp {
         btn.innerHTML = '<span class="loading"></span> Sending...';
 
         try {
+            // Determine active body strategy
             const bodyType = this.currentRequest.body_type;
+            const multipartData = this.getMultipartDataConfig();
+
             let fetchOptions = { method: 'POST' };
 
-            if (bodyType === 'form_data') {
+            // Logic: 
+            // 1. If 'raw', send raw.
+            // 2. If 'form_urlencoded', send that.
+            // 3. If 'none' and we have multipart data, send multipart.
+            // 4. (Explicit 'form_data' is removed from dropdown, so 'none' covers it)
+
+            let isMultipart = false;
+
+            if (bodyType === 'form_data' || (bodyType === 'none' && multipartData.length > 0)) {
+                isMultipart = true;
+            }
+
+            if (isMultipart) {
+                // Construct FormData with actual files
                 // Construct FormData with actual files
                 const formData = new FormData();
 
@@ -834,12 +854,15 @@ class LuminaApp {
 
     renderBody() {
         const bodyType = this.currentRequest.body_type || 'none';
-        document.getElementById('select-body-type').value = bodyType;
+        // Map form_data back to 'none' in dropdown since it's now removed from options
+        // Effectively, 'none' acts as "Text/Multipart" depending on Params tab content.
+        const uiBodyType = (bodyType === 'form_data') ? 'none' : bodyType;
+        document.getElementById('select-body-type').value = uiBodyType;
 
         // Show/Hide Editors
         document.getElementById('body-editor-raw').classList.add('hidden');
         document.getElementById('body-editor-form-urlencoded').classList.add('hidden');
-        document.getElementById('body-editor-form-data').classList.add('hidden');
+        // document.getElementById('body-editor-form-data').classList.add('hidden'); // Removed from DOM
         document.getElementById('body-actions-raw').style.display = 'none';
 
         if (bodyType === 'raw') {
@@ -849,9 +872,6 @@ class LuminaApp {
         } else if (bodyType === 'form_urlencoded') {
             document.getElementById('body-editor-form-urlencoded').classList.remove('hidden');
             this.renderKeyValueTable('body-form', this.currentRequest.body_form);
-        } else if (bodyType === 'form_data') {
-            document.getElementById('body-editor-form-data').classList.remove('hidden');
-            this.renderMultipartTable(this.currentRequest.body_multipart);
         }
     }
 

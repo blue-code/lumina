@@ -63,10 +63,19 @@ class HttpClient:
                         headers['Content-Type'] = 'text/plain'
 
             elif resolved_request.body_type == BodyType.FORM_URLENCODED:
-                body_data = resolved_request.body_form
-                headers['Content-Type'] = 'application/x-www-form-urlencoded'
+                if runtime_files or runtime_data:
+                     # Switch to multipart if runtime files are provided, even if saved type was form-urlencoded (unlikely but safe)
+                     resolved_request.body_type = BodyType.FORM_DATA
+                else:
+                    body_data = resolved_request.body_form
+                    headers['Content-Type'] = 'application/x-www-form-urlencoded'
 
-            elif resolved_request.body_type == BodyType.FORM_DATA:
+            if resolved_request.body_type == BodyType.NONE:
+                # If body type is NONE but we have runtime files, it implies multipart
+                if runtime_files or runtime_data:
+                    resolved_request.body_type = BodyType.FORM_DATA
+
+            if resolved_request.body_type == BodyType.FORM_DATA:
                 # multipart/form-data
                 # 런타임 파일/데이터가 있으면 그것을 사용 (웹 UI 업로드)
                 if runtime_files or runtime_data:
