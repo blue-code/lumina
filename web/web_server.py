@@ -50,11 +50,11 @@ class LuminaWebServer:
             with open(secret_file, 'wb') as f:
                 f.write(secret_key)
         
-        # Session settings (cross-site capable for API calls from other origins)
+        # Session settings (same-origin; cookies allowed on localhost)
         self.app.config['SESSION_TYPE'] = 'filesystem'
         self.app.config['SESSION_COOKIE_HTTPONLY'] = True
-        self.app.config['SESSION_COOKIE_SAMESITE'] = 'None'
-        self.app.config['SESSION_COOKIE_SECURE'] = False  # allow http during local dev
+        self.app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+        self.app.config['SESSION_COOKIE_SECURE'] = False  # http localhost friendly
         self.app.config['SESSION_COOKIE_NAME'] = 'lumina_session'
         self.app.permanent_session_lifetime = timedelta(days=30)
 
@@ -353,7 +353,7 @@ class LuminaWebServer:
                 session_id,
                 max_age=60 * 60 * 24 * 30,  # 30 days
                 httponly=True,
-                samesite='None',
+                samesite='Lax',
                 secure=False
             )
             return resp
