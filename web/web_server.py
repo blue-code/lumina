@@ -694,6 +694,12 @@ class LuminaWebServer:
                 imported_folder = OpenAPIConverter.import_from_content(content)
                 project_name = imported_folder.name or "Imported API"
 
+                def _count_requests(folder):
+                    count = len(folder.requests)
+                    for sub in folder.folders:
+                        count += _count_requests(sub)
+                    return count
+
                 with self.sessions_lock:
                     self.sessions.setdefault(session_id, {})
 
@@ -730,7 +736,7 @@ class LuminaWebServer:
 
                 return jsonify({
                     'success': True,
-                    'imported_count': len(imported_folder.requests),
+                    'imported_count': _count_requests(imported_folder),
                     'folder_name': imported_folder.name,
                     'project_name': project_name,
                     'project_id': target_project_id,
@@ -798,15 +804,11 @@ class LuminaWebServer:
         # API: 모든 프로젝트 목록 조회
         @self.app.route('/api/projects', methods=['GET'])
         def get_projects():
-            if 'session_id' not in session:
-                session['session_id'] = str(uuid.uuid4())
-
+            # Ensure a session and default project exist
+            pm = self.get_session_project_manager()
             session_id = session['session_id']
 
             with self.sessions_lock:
-                if session_id not in self.sessions:
-                    self.sessions[session_id] = {}
-
                 projects = []
                 for project_id, pm in self.sessions[session_id].items():
                     projects.append({
@@ -866,12 +868,15 @@ class LuminaWebServer:
                 pm = ProjectManager()
                 pm.project_name = project_name
                 self.sessions[session_id][project_id] = pm
+                # Make the new project active immediately
+                self.active_projects[session_id] = project_id
 
                 return jsonify({
                     'success': True,
                     'project': {
                         'id': project_id,
-                        'name': pm.project_name
+                        'name': pm.project_name,
+                        'is_active': True
                     }
                 }), 201
 
