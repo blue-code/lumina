@@ -625,6 +625,41 @@ class LuminaWebServer:
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
 
+        # API: OpenAPI 임포트
+        @self.app.route('/api/import/openapi', methods=['POST'])
+        def import_openapi():
+            pm = self.get_session_project_manager()
+            req_data = request.json or {}
+            url = req_data.get('url', '').strip()
+            content = req_data.get('content', '').strip()
+
+            if not url and not content:
+                return jsonify({'error': 'URL or content is required'}), 400
+
+            try:
+                # Fetch from URL when provided
+                if url:
+                    import requests
+                    resp = requests.get(url, timeout=15)
+                    resp.raise_for_status()
+                    content = resp.text
+
+                from utils.openapi_converter import OpenAPIConverter
+                imported_folder = OpenAPIConverter.import_from_content(content)
+
+                if not imported_folder:
+                    return jsonify({'error': 'Failed to parse OpenAPI data'}), 400
+
+                pm.root_folder.add_folder(imported_folder)
+
+                return jsonify({
+                    'success': True,
+                    'imported_count': len(imported_folder.requests),
+                    'folder_name': imported_folder.name
+                })
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+
         # API: Postman 내보내기
         @self.app.route('/api/export/postman', methods=['GET'])
         def export_postman():
