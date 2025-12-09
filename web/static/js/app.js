@@ -2110,8 +2110,17 @@ class LuminaApp {
             const result = await response.json();
 
             if (result.success) {
+                // Sync projects and switch to the imported one
+                if (result.project_id && result.project_name) {
+                    this.currentProject = {
+                        id: result.project_id,
+                        name: result.project_name,
+                        is_active: true
+                    };
+                }
                 alert(`Successfully imported "${result.folder_name}"! (${result.imported_count} requests)`);
                 this.hideImportOpenApiModal();
+                await this.loadProjects();
                 await this.loadFolderTree();
             } else {
                 alert(`Import failed: ${result.error}`);
