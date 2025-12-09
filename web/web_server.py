@@ -468,6 +468,8 @@ class LuminaWebServer:
                 req.body_raw = data['body_raw']
             if 'body_form' in data:
                 req.body_form = data['body_form']
+            if 'body_multipart' in data:
+                req.body_multipart = data['body_multipart']
             if 'auth_type' in data:
                 req.auth_type = AuthType(data['auth_type'])
             if 'auth_basic_username' in data:
@@ -506,8 +508,34 @@ class LuminaWebServer:
             if not req:
                 return jsonify({'error': 'Request not found'}), 404
 
+            # 런타임 데이터 (파일 업로드 등) 확인
+            runtime_data = None
+            runtime_files = None
+            
+            content_type = request.content_type or ''
+            if 'multipart/form-data' in content_type:
+                # 폼 데이터 (텍스트)
+                runtime_data = request.form.to_dict()
+                
+                # 파일 데이터
+                runtime_files = {}
+                for key, f in request.files.items():
+                    # (filename, stream, content_type)
+                    # stream은 파일 객체이므로 requests가 읽을 수 있음
+                    runtime_files[key] = (f.filename, f.stream, f.content_type)
+                    
+                # Store it temporarily for this execution? 
+                # Actually, if we are uploading files, we probably want to override the request's BodyType to FORM_DATA
+                # But let http_client logic handle usage.
+                
+                # Ensure body_type matches if not set (UI should have saved it though)
+                if req.body_type != BodyType.FORM_DATA:
+                    # Temporary override for this execution if UI sent multipart but saved model differs?
+                    # Better to trust the saved model, but http_client logic prefers runtime_files.
+                    pass
+
             # 요청 실행
-            response = http_client.send_request(req)
+            response = http_client.send_request(req, runtime_data, runtime_files)
 
             # 히스토리에 저장
             history_mgr.add_entry(req, response)

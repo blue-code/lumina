@@ -52,6 +52,7 @@ class RequestModel:
         self.body_type = BodyType.NONE
         self.body_raw = ""  # raw 모드일 때
         self.body_form: Dict[str, str] = {}  # form 모드일 때
+        self.body_multipart: List[Dict[str, str]] = []  # multipart 모드일 때 [{'key': 'k', 'value': 'v', 'type': 'text|file'}]
 
         # 인증 설정
         self.auth_type = AuthType.NONE
@@ -77,6 +78,7 @@ class RequestModel:
             "body_type": self.body_type.value,
             "body_raw": self.body_raw,
             "body_form": self.body_form,
+            "body_multipart": self.body_multipart,
             "auth_type": self.auth_type.value,
             "auth_basic_username": self.auth_basic_username,
             "auth_basic_password": self.auth_basic_password,
@@ -99,6 +101,7 @@ class RequestModel:
         request.body_type = BodyType(data.get("body_type", "none"))
         request.body_raw = data.get("body_raw", "")
         request.body_form = data.get("body_form", {})
+        request.body_multipart = data.get("body_multipart", [])
         request.auth_type = AuthType(data.get("auth_type", "none"))
         request.auth_basic_username = data.get("auth_basic_username", "")
         request.auth_basic_password = data.get("auth_basic_password", "")

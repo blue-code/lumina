@@ -187,6 +187,9 @@ class LuminaApp {
 
         // Method 선택 변경
         document.getElementById('select-method').addEventListener('change', () => this.saveCurrentRequest());
+
+        // Body Type 변경
+        document.getElementById('select-body-type').addEventListener('change', (e) => this.onBodyTypeChange(e.target.value));
     }
 
     async loadFolderTree() {
@@ -385,7 +388,8 @@ class LuminaApp {
         this.renderKeyValueTable('params', this.currentRequest.params);
 
         // Body
-        document.getElementById('body-raw').value = this.currentRequest.body_raw || '';
+        // document.getElementById('body-raw').value = this.currentRequest.body_raw || '';
+        this.renderBody();
 
         // Auth
         this.renderAuth();
@@ -444,8 +448,8 @@ class LuminaApp {
             this.addKeyValueRow(type, key, value);
         });
 
-        // 빈 행 추가
-        this.addKeyValueRow(type, '', '');
+        // 빈 행 추가 - Removed automatic adding
+        // this.addKeyValueRow(type, '', '');
     }
 
     addKeyValueRow(type, key = '', value = '') {
@@ -458,20 +462,10 @@ class LuminaApp {
             <td><button class="btn-remove" onclick="this.parentElement.parentElement.remove()">×</button></td>
         `;
 
-        // 입력 시 새 행 추가
+        // 입력 시 새 행 추가 Logic Removed
         const inputs = tr.querySelectorAll('input');
         inputs.forEach(input => {
-            input.addEventListener('input', () => {
-                // 마지막 행에 입력이 있으면 새 빈 행 추가
-                const rows = tbody.querySelectorAll('tr');
-                const lastRow = rows[rows.length - 1];
-                const lastInputs = lastRow.querySelectorAll('input');
-                const hasValue = Array.from(lastInputs).some(inp => inp.value.trim());
-
-                if (hasValue) {
-                    this.addKeyValueRow(type, '', '');
-                }
-
+            input.addEventListener('change', () => {
                 this.saveCurrentRequest();
             });
         });
@@ -521,7 +515,9 @@ class LuminaApp {
             headers: this.getKeyValueData('headers'),
             params: this.getKeyValueData('params'),
             body_raw: document.getElementById('body-raw').value,
-            body_type: 'raw',
+            body_type: document.getElementById('select-body-type').value,
+            body_form: this.getKeyValueData('body-form'),
+            body_multipart: this.getMultipartDataConfig(),
             documentation: document.getElementById('docs-markdown').value,
             ...authData
         };
@@ -779,9 +775,38 @@ class LuminaApp {
         btn.innerHTML = '<span class="loading"></span> Sending...';
 
         try {
-            const response = await fetch(`${API_BASE}/requests/${this.currentRequest.id}/execute`, {
-                method: 'POST'
-            });
+            const bodyType = this.currentRequest.body_type;
+            let fetchOptions = { method: 'POST' };
+
+            if (bodyType === 'form_data') {
+                // Construct FormData with actual files
+                const formData = new FormData();
+
+                const tbody = document.getElementById('body-multipart-tbody');
+                tbody.querySelectorAll('tr').forEach(tr => {
+                    const key = tr.querySelector('.mp-key').value.trim();
+                    const type = tr.querySelector('.mp-type').value;
+
+                    if (!key) return;
+
+                    if (type === 'file') {
+                        const fileInput = tr.querySelector('.mp-file');
+                        if (fileInput.files.length > 0) {
+                            formData.append(key, fileInput.files[0]);
+                        }
+                    } else {
+                        const val = tr.querySelector('.mp-value').value;
+                        formData.append(key, val);
+                    }
+                });
+
+                fetchOptions.body = formData;
+                // No Content-Type (browser sets it)
+            } else {
+                fetchOptions.headers = { 'Content-Type': 'application/json' };
+            }
+
+            const response = await fetch(`${API_BASE}/requests/${this.currentRequest.id}/execute`, fetchOptions);
 
             const result = await response.json();
             this.renderResponse(result);
@@ -796,8 +821,111 @@ class LuminaApp {
             });
         } finally {
             btn.disabled = false;
-            btn.textContent = 'Send';
+            btn.textContent = 'Send 🚀';
         }
+    }
+
+    async executeRequestHelper(fetchOptions) {
+        return await fetch(`${API_BASE}/requests/${this.currentRequest.id}/execute`, fetchOptions);
+    }
+
+
+    // ==================== Body / Multipart Functions ====================
+
+    renderBody() {
+        const bodyType = this.currentRequest.body_type || 'none';
+        document.getElementById('select-body-type').value = bodyType;
+
+        // Show/Hide Editors
+        document.getElementById('body-editor-raw').classList.add('hidden');
+        document.getElementById('body-editor-form-urlencoded').classList.add('hidden');
+        document.getElementById('body-editor-form-data').classList.add('hidden');
+        document.getElementById('body-actions-raw').style.display = 'none';
+
+        if (bodyType === 'raw') {
+            document.getElementById('body-editor-raw').classList.remove('hidden');
+            document.getElementById('body-actions-raw').style.display = 'block';
+            document.getElementById('body-raw').value = this.currentRequest.body_raw || '';
+        } else if (bodyType === 'form_urlencoded') {
+            document.getElementById('body-editor-form-urlencoded').classList.remove('hidden');
+            this.renderKeyValueTable('body-form', this.currentRequest.body_form);
+        } else if (bodyType === 'form_data') {
+            document.getElementById('body-editor-form-data').classList.remove('hidden');
+            this.renderMultipartTable(this.currentRequest.body_multipart);
+        }
+    }
+
+    onBodyTypeChange(type) {
+        this.currentRequest.body_type = type;
+        this.renderBody();
+        this.saveCurrentRequest();
+    }
+
+    renderMultipartTable(data) {
+        const tbody = document.getElementById('body-multipart-tbody');
+        tbody.innerHTML = '';
+        (data || []).forEach(item => {
+            this.addMultipartRow(item.key, item.value, item.type);
+        });
+    }
+
+    addMultipartRow(key = '', value = '', type = 'text') {
+        const tbody = document.getElementById('body-multipart-tbody');
+        const tr = document.createElement('tr');
+
+        // Type selector logic
+        const valueInputHtml = type === 'file'
+            ? `<input type="file" class="mp-file">`
+            : `<input type="text" class="mp-value" value="${this.escapeHtml(value)}" placeholder="Value">`;
+
+        tr.innerHTML = `
+            <td><input type="text" class="mp-key" value="${this.escapeHtml(key)}" placeholder="Key"></td>
+            <td>
+                <select class="mp-type select-method" style="width: 100%; padding: 0.4rem;">
+                    <option value="text" ${type === 'text' ? 'selected' : ''}>Text</option>
+                    <option value="file" ${type === 'file' ? 'selected' : ''}>File</option>
+                </select>
+            </td>
+            <td class="mp-value-cell">${valueInputHtml}</td>
+            <td><button class="btn-remove" onclick="this.parentElement.parentElement.remove(); app.saveCurrentRequest()">×</button></td>
+        `;
+
+        // Type Change Listener
+        tr.querySelector('.mp-type').addEventListener('change', (e) => {
+            const newType = e.target.value;
+            const valueCell = tr.querySelector('.mp-value-cell');
+            if (newType === 'file') {
+                valueCell.innerHTML = `<input type="file" class="mp-file">`;
+            } else {
+                valueCell.innerHTML = `<input type="text" class="mp-value" value="" placeholder="Value">`;
+            }
+            this.saveCurrentRequest();
+        });
+
+        // Value Change Listener
+        const valInput = tr.querySelector('.mp-value');
+        if (valInput) valInput.addEventListener('change', () => this.saveCurrentRequest());
+        const keyInput = tr.querySelector('.mp-key');
+        keyInput.addEventListener('change', () => this.saveCurrentRequest());
+
+        tbody.appendChild(tr);
+    }
+
+    getMultipartDataConfig() {
+        const tbody = document.getElementById('body-multipart-tbody');
+        const data = [];
+        tbody.querySelectorAll('tr').forEach(tr => {
+            const key = tr.querySelector('.mp-key').value.trim();
+            const type = tr.querySelector('.mp-type').value;
+            let value = '';
+            if (type === 'text') {
+                value = tr.querySelector('.mp-value').value;
+            }
+            if (key) {
+                data.push({ key, type, value });
+            }
+        });
+        return data;
     }
 
     renderResponse(response) {

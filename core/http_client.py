@@ -21,7 +21,7 @@ class HttpClient:
         self.env_manager = env_manager
         self.session = requests.Session()
 
-    def send_request(self, request: RequestModel) -> ResponseModel:
+    def send_request(self, request: RequestModel, runtime_data: Dict = None, runtime_files: Dict = None) -> ResponseModel:
         """
         HTTP 요청 전송
 
@@ -67,8 +67,17 @@ class HttpClient:
                 headers['Content-Type'] = 'application/x-www-form-urlencoded'
 
             elif resolved_request.body_type == BodyType.FORM_DATA:
-                # multipart/form-data는 requests가 자동 처리
-                files = {key: (None, value) for key, value in resolved_request.body_form.items()}
+                # multipart/form-data
+                # 런타임 파일/데이터가 있으면 그것을 사용 (웹 UI 업로드)
+                if runtime_files or runtime_data:
+                    files = runtime_files
+                    # 텍스트 필드는 body_data 로 전달 (requests가 files와 data를 함께 처리함)
+                    body_data = runtime_data
+                else:
+                    # 저장된 설정 사용 (텍스트 필드만 가능)
+                    # requests의 files 파라미터를 사용하여 multipart로 강제
+                    # 튜플 형식: (filename, fileobj, content_type) -> filename이 None이면 텍스트 필드
+                    files = {key: (None, value) for key, value in resolved_request.body_form.items()}
 
             # 요청 전송
             start_time = time.time()
@@ -78,7 +87,7 @@ class HttpClient:
                 url=url,
                 headers=headers,
                 params=params,
-                data=body_data if not files else None,
+                data=body_data, # files와 함께 사용되면 폼 필드로 처리됨
                 files=files,
                 auth=auth,
                 timeout=self.DEFAULT_TIMEOUT,

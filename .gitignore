@@ -10,3 +10,4 @@ postman sample.yml
 .idea/
 projects/
 shared_projects/
+tests/

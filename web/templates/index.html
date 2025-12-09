@@ -1,15 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lumina ✨ - Cosmic Interface</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='30' fill='%2300f2ff' opacity='0.2'/><path d='M18 34l10 12 18-28' stroke='%2300f2ff' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><circle cx='32' cy='32' r='30' fill='%2300f2ff' opacity='0.2'/><path d='M18 34l10 12 18-28' stroke='%2300f2ff' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
+
 <body>
     <!-- Header -->
     <div class="header">
@@ -45,7 +50,8 @@
                         + New Request
                     </button>
                 </div>
-                <div id="selected-folder-indicator" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; padding: 0.3rem 0.5rem; background: rgba(255,255,255,0.03); border-radius: 4px; display: none;">
+                <div id="selected-folder-indicator"
+                    style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; padding: 0.3rem 0.5rem; background: rgba(255,255,255,0.03); border-radius: 4px; display: none;">
                     📂 Creating in: <span id="selected-folder-name">Root</span>
                 </div>
             </div>
@@ -120,9 +126,11 @@
                         💡 Select an Insomnia export JSON file.
                     </div>
                     <div style="margin-bottom: 1rem;">
-                        <input type="file" id="insomnia-import-file" accept=".json" class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px;">
+                        <input type="file" id="insomnia-import-file" accept=".json" class="glass-input"
+                            style="width: 100%; padding: 0.8rem; border-radius: 6px;">
                     </div>
-                    <div id="import-insomnia-preview" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 6px;">
+                    <div id="import-insomnia-preview"
+                        style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 6px;">
                         <p><strong>File:</strong> <span id="import-insomnia-filename"></span></p>
                         <p><strong>Project:</strong> <span id="import-insomnia-projectname"></span></p>
                     </div>
@@ -145,7 +153,8 @@
                     <div class="tab-help" style="margin-bottom: 1rem;">
                         💡 Your API collection exported in Insomnia format. Copy or download.
                     </div>
-                    <textarea id="export-insomnia-textarea" readonly style="width: 100%; min-height: 400px; max-height: 500px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; padding: 1rem; color: var(--text-main); font-family: var(--font-mono); font-size: 0.875rem;"></textarea>
+                    <textarea id="export-insomnia-textarea" readonly
+                        style="width: 100%; min-height: 400px; max-height: 500px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; padding: 1rem; color: var(--text-main); font-family: var(--font-mono); font-size: 0.875rem;"></textarea>
                 </div>
                 <div class="modal-footer">
                     <button class="btn-primary" id="btn-download-export-insomnia">💾 Download</button>
@@ -167,9 +176,11 @@
                         💡 Select a Postman Collection JSON file (v2.0 or v2.1).
                     </div>
                     <div style="margin-bottom: 1rem;">
-                        <input type="file" id="postman-import-file" accept=".json" class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px;">
+                        <input type="file" id="postman-import-file" accept=".json" class="glass-input"
+                            style="width: 100%; padding: 0.8rem; border-radius: 6px;">
                     </div>
-                    <div id="import-postman-preview" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 6px;">
+                    <div id="import-postman-preview"
+                        style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 6px;">
                         <p><strong>File:</strong> <span id="import-postman-filename"></span></p>
                         <p><strong>Collection:</strong> <span id="import-postman-collectionname"></span></p>
                     </div>
@@ -192,7 +203,8 @@
                     <div class="tab-help" style="margin-bottom: 1rem;">
                         💡 Your API collection exported in Postman Collection v2.1 format. Copy or download.
                     </div>
-                    <textarea id="export-postman-textarea" readonly style="width: 100%; min-height: 400px; max-height: 500px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; padding: 1rem; color: var(--text-main); font-family: var(--font-mono); font-size: 0.875rem;"></textarea>
+                    <textarea id="export-postman-textarea" readonly
+                        style="width: 100%; min-height: 400px; max-height: 500px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; padding: 1rem; color: var(--text-main); font-family: var(--font-mono); font-size: 0.875rem;"></textarea>
                 </div>
                 <div class="modal-footer">
                     <button class="btn-primary" id="btn-download-export-postman">💾 Download</button>
@@ -240,13 +252,15 @@
             <!-- Tab Contents -->
             <div class="tab-content active" id="tab-params">
                 <div style="margin-bottom: 1rem;">
-                    <h4 style="margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">Current Parameters</h4>
+                    <h4 style="margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">Current Parameters
+                    </h4>
                     <table class="key-value-table">
                         <thead>
                             <tr>
                                 <th>Key</th>
                                 <th>Value</th>
-                                <th width="40"></th>
+                                <th width="40"><button class="btn-icon"
+                                        onclick="app.addKeyValueRow('params')">+</button></th>
                             </tr>
                         </thead>
                         <tbody id="params-tbody">
@@ -255,8 +269,10 @@
                     </table>
                 </div>
 
-                <div class="params-history-section" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
-                    <h4 style="margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">Parameter History</h4>
+                <div class="params-history-section"
+                    style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
+                    <h4 style="margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">Parameter History
+                    </h4>
                     <div id="params-history-list" class="history-list" style="max-height: 200px;">
                         <!-- Parameter history will be loaded here -->
                     </div>
@@ -269,7 +285,8 @@
                         <tr>
                             <th>Key</th>
                             <th>Value</th>
-                            <th width="40"></th>
+                            <th width="40"><button class="btn-icon" onclick="app.addKeyValueRow('headers')">+</button>
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="headers-tbody">
@@ -279,20 +296,67 @@
             </div>
 
             <div class="tab-content" id="tab-body">
-                <div class="body-actions" style="margin-bottom: 1rem;">
-                    <button class="btn-glass" id="btn-beautify-json">
-                        ✨ Beautify JSON
-                    </button>
+                <div class="body-toolbar"
+                    style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                    <div class="body-type-selector">
+                        <label style="margin-right: 0.5rem; color: var(--text-muted);">Body Type:</label>
+                        <select id="select-body-type" class="select-method" style="text-align: left;">
+                            <option value="none">None</option>
+                            <option value="raw">Raw (JSON/Text)</option>
+                            <option value="form_urlencoded">x-www-form-urlencoded</option>
+                            <option value="form_data">Multipart Form</option>
+                        </select>
+                    </div>
+                    <div class="body-actions" id="body-actions-raw" style="display: none;">
+                        <button class="btn-glass" id="btn-beautify-json">
+                            ✨ Beautify JSON
+                        </button>
+                    </div>
                 </div>
-                <textarea id="body-raw" placeholder="{
+
+                <!-- Raw Editor -->
+                <div id="body-editor-raw" class="body-editor hidden">
+                    <textarea id="body-raw" placeholder="{
   &quot;key&quot;: &quot;value&quot;
 }"></textarea>
+                </div>
+
+                <!-- Form URL Encoded Editor -->
+                <div id="body-editor-form-urlencoded" class="body-editor hidden">
+                    <table class="key-value-table">
+                        <thead>
+                            <tr>
+                                <th>Key</th>
+                                <th>Value</th>
+                                <th width="40"><button class="btn-icon"
+                                        onclick="app.addKeyValueRow('body-form')">+</button></th>
+                            </tr>
+                        </thead>
+                        <tbody id="body-form-tbody"></tbody>
+                    </table>
+                </div>
+
+                <!-- Multipart Form Editor -->
+                <div id="body-editor-form-data" class="body-editor hidden">
+                    <table class="key-value-table">
+                        <thead>
+                            <tr>
+                                <th>Key</th>
+                                <th width="100">Type</th>
+                                <th>Value</th>
+                                <th width="40"><button class="btn-icon" onclick="app.addMultipartRow()">+</button></th>
+                            </tr>
+                        </thead>
+                        <tbody id="body-multipart-tbody"></tbody>
+                    </table>
+                </div>
             </div>
 
             <div class="tab-content" id="tab-auth">
                 <div class="auth-container" style="max-width: 600px;">
                     <div class="form-group" style="margin-bottom: 1rem;">
-                        <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted);">Auth Type</label>
+                        <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted);">Auth
+                            Type</label>
                         <select id="auth-type" class="select-method" style="width: 100%; text-align: left;">
                             <option value="none">No Auth</option>
                             <option value="basic">Basic Auth</option>
@@ -304,28 +368,35 @@
                     <!-- Auth Fields (Hidden by default) -->
                     <div id="auth-basic" class="auth-section hidden">
                         <div class="form-group mb-1">
-                            <input type="text" id="auth-basic-username" placeholder="Username" class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+                            <input type="text" id="auth-basic-username" placeholder="Username" class="glass-input"
+                                style="width: 100%; padding: 0.8rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
                         </div>
                         <div class="form-group">
-                            <input type="password" id="auth-basic-password" placeholder="Password" class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+                            <input type="password" id="auth-basic-password" placeholder="Password" class="glass-input"
+                                style="width: 100%; padding: 0.8rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
                         </div>
                     </div>
 
                     <div id="auth-bearer" class="auth-section hidden">
                         <div class="form-group">
-                            <input type="text" id="auth-bearer-token" placeholder="Bearer Token" class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+                            <input type="text" id="auth-bearer-token" placeholder="Bearer Token" class="glass-input"
+                                style="width: 100%; padding: 0.8rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
                         </div>
                     </div>
 
                     <div id="auth-apikey" class="auth-section hidden">
                         <div class="form-group mb-1">
-                            <input type="text" id="auth-apikey-name" placeholder="Key Name (e.g. X-API-Key)" class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+                            <input type="text" id="auth-apikey-name" placeholder="Key Name (e.g. X-API-Key)"
+                                class="glass-input"
+                                style="width: 100%; padding: 0.8rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
                         </div>
                         <div class="form-group mb-1">
-                            <input type="text" id="auth-apikey-value" placeholder="Key Value" class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
+                            <input type="text" id="auth-apikey-value" placeholder="Key Value" class="glass-input"
+                                style="width: 100%; padding: 0.8rem; border-radius: 6px; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: white;">
                         </div>
                         <div class="form-group">
-                            <select id="auth-apikey-location" class="select-method" style="width: 100%; text-align: left;">
+                            <select id="auth-apikey-location" class="select-method"
+                                style="width: 100%; text-align: left;">
                                 <option value="header">Header</option>
                                 <option value="query">Query Params</option>
                             </select>
@@ -339,7 +410,8 @@
                     <button class="btn-glass" id="btn-toggle-preview">👁️ Toggle Preview</button>
                 </div>
                 <textarea id="docs-markdown" placeholder="# API Documentation"></textarea>
-                <div id="docs-preview" class="docs-preview hidden" style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;"></div>
+                <div id="docs-preview" class="docs-preview hidden"
+                    style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;"></div>
             </div>
         </div>
 
@@ -424,12 +496,14 @@
                 </div>
                 <div class="form-group">
                     <label for="import-openapi-url">OpenAPI URL:</label>
-                    <input type="text" id="import-openapi-url" placeholder="http://localhost:8080/v3/api-docs" class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px;">
+                    <input type="text" id="import-openapi-url" placeholder="http://localhost:8080/v3/api-docs"
+                        class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px;">
                 </div>
                 <div style="text-align: center; margin: 10px 0;">- OR -</div>
                 <div class="form-group">
                     <label>Paste JSON/YAML Content:</label>
-                    <textarea id="import-openapi-content" placeholder="Paste your OpenAPI definition here..." style="width: 100%; height: 100px; padding: 0.8rem; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 6px; color: white;"></textarea>
+                    <textarea id="import-openapi-content" placeholder="Paste your OpenAPI definition here..."
+                        style="width: 100%; height: 100px; padding: 0.8rem; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 6px; color: white;"></textarea>
                 </div>
             </div>
             <div class="modal-footer">
@@ -449,7 +523,8 @@
             <div class="modal-body">
                 <div class="form-group">
                     <label for="new-project-name">Project Name:</label>
-                    <input type="text" id="new-project-name" placeholder="Enter project name..." class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px;">
+                    <input type="text" id="new-project-name" placeholder="Enter project name..." class="glass-input"
+                        style="width: 100%; padding: 0.8rem; border-radius: 6px;">
                 </div>
             </div>
             <div class="modal-footer">
@@ -520,7 +595,8 @@
                 </div>
                 <button class="btn-primary" id="btn-create-share" style="width: 100%;">Generate Link</button>
                 <div id="share-url-container" style="display: none; margin-top: 1rem;">
-                    <input type="text" id="share-url-input" readonly class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px;">
+                    <input type="text" id="share-url-input" readonly class="glass-input"
+                        style="width: 100%; padding: 0.8rem; border-radius: 6px;">
                 </div>
             </div>
             <div class="modal-footer">
@@ -541,7 +617,8 @@
                 <div class="tab-help" style="margin-bottom: 1rem;">
                     💡 Paste the share URL or ID below to import a shared project.
                 </div>
-                <input type="text" id="import-share-input" placeholder="Paste share URL or ID..." class="glass-input" style="width: 100%; padding: 0.8rem; border-radius: 6px;">
+                <input type="text" id="import-share-input" placeholder="Paste share URL or ID..." class="glass-input"
+                    style="width: 100%; padding: 0.8rem; border-radius: 6px;">
             </div>
             <div class="modal-footer">
                 <button class="btn-cancel" id="btn-cancel-import-share">Cancel</button>
@@ -578,4 +655,5 @@
 
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
+
 </html>
