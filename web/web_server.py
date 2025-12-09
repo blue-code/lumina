@@ -33,7 +33,14 @@ class LuminaWebServer:
         self.app = Flask(__name__,
                         template_folder='templates',
                         static_folder='static')
-        CORS(self.app, supports_credentials=True)  # CORS with credentials
+
+        # Allow browser cookies on known origins
+        allowed_origins = [
+            "http://localhost:15555",
+            "http://127.0.0.1:15555",
+            f"http://{host}:{port}"
+        ]
+        CORS(self.app, supports_credentials=True, origins=allowed_origins)
 
         # 데이터 디렉토리 설정
         self.data_dir = Path('.lumina_data')
