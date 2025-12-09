@@ -826,13 +826,19 @@ class LuminaApp {
                 fetchOptions.headers = { 'Content-Type': 'application/json' };
             }
 
-            const response = await fetch(`${API_BASE}/requests/${this.currentRequest.id}/execute`, fetchOptions);
+            const isBrowserMode = document.getElementById('chk-browser-mode').checked;
 
-            const result = await response.json();
-            this.renderResponse(result);
-
-            // 히스토리 새로고침
-            await this.loadHistory();
+            if (isBrowserMode) {
+                // ==================== BROWSER MODE EXECUTION ====================
+                await this.executeRequestBrowserMode(isMultipart);
+            } else {
+                // ==================== BACKEND PROXY EXECUTION ====================
+                const response = await fetch(`${API_BASE}/requests/${this.currentRequest.id}/execute`, fetchOptions);
+                const result = await response.json();
+                this.renderResponse(result);
+                // 히스토리 새로고침
+                await this.loadHistory();
+            }
         } catch (error) {
             console.error('Failed to send request:', error);
             this.renderResponse({
@@ -847,6 +853,94 @@ class LuminaApp {
 
     async executeRequestHelper(fetchOptions) {
         return await fetch(`${API_BASE}/requests/${this.currentRequest.id}/execute`, fetchOptions);
+    }
+
+    async executeRequestBrowserMode(isMultipart) {
+        const req = this.currentRequest;
+        const method = document.getElementById('select-method').value;
+        const url = document.getElementById('input-url').value; // Use live value
+
+        let headers = this.getKeyValueData('headers');
+
+        // Prepare Options
+        const options = {
+            method: method,
+            headers: headers
+        };
+
+        // Handle Body
+        if (['POST', 'PUT', 'PATCH'].includes(method)) {
+            if (isMultipart) {
+                const formData = new FormData();
+                const tbody = document.getElementById('body-multipart-tbody');
+                tbody.querySelectorAll('tr').forEach(tr => {
+                    const key = tr.querySelector('.mp-key').value.trim();
+                    const type = tr.querySelector('.mp-type').value;
+                    if (!key) return;
+
+                    if (type === 'file') {
+                        const fileInput = tr.querySelector('.mp-file');
+                        if (fileInput.files.length > 0) {
+                            formData.append(key, fileInput.files[0]);
+                        }
+                    } else {
+                        const val = tr.querySelector('.mp-value').value;
+                        formData.append(key, val);
+                    }
+                });
+                options.body = formData;
+                // Don't set Content-Type for multipart
+            } else {
+                const bodyType = req.body_type;
+                if (bodyType === 'raw') {
+                    options.body = document.getElementById('body-raw').value;
+                    // Ensure JS can parse it, or just send text
+                    // check content-type header
+                    if (!headers['Content-Type']) {
+                        // try detect json
+                        try {
+                            JSON.parse(options.body);
+                            options.headers['Content-Type'] = 'application/json';
+                        } catch (e) { }
+                    }
+                } else if (bodyType === 'form_urlencoded') {
+                    const data = this.getKeyValueData('body-form');
+                    const params = new URLSearchParams();
+                    Object.entries(data).forEach(([k, v]) => params.append(k, v));
+                    options.body = params;
+                    options.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+                }
+            }
+        }
+
+        // Handle Query Params
+        const paramsData = this.getKeyValueData('params');
+        const urlObj = new URL(url); // Assumes valid URL
+        Object.entries(paramsData).forEach(([k, v]) => urlObj.searchParams.append(k, v));
+        const finalUrl = urlObj.toString();
+
+        const startTime = Date.now();
+        const response = await fetch(finalUrl, options);
+        const endTime = Date.now();
+
+        const text = await response.text();
+
+        // Construct Result Object matching Backend format
+        const result = {
+            status_code: response.status,
+            status_text: response.statusText,
+            headers: {},
+            body: text,
+            elapsed_ms: endTime - startTime,
+            size_bytes: text.length, // approximation
+            content_type: response.headers.get('content-type') || ''
+        };
+
+        response.headers.forEach((val, key) => {
+            result.headers[key] = val;
+        });
+
+        this.renderResponse(result);
     }
 
 
