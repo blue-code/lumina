@@ -334,7 +334,7 @@ class LuminaWebServer:
             # Persist session immediately
             self.save_session(session_id)
 
-            return jsonify({
+            resp = jsonify({
                 'success': True,
                 'session_id': session_id,
                 'project': {
@@ -342,6 +342,15 @@ class LuminaWebServer:
                     'name': pm.project_name
                 }
             })
+            # Also set an explicit cookie so callers can verify persistence
+            resp.set_cookie(
+                'lumina_session_id',
+                session_id,
+                max_age=60 * 60 * 24 * 30,  # 30 days
+                httponly=True,
+                samesite='Lax'
+            )
+            return resp
 
         # API 문서 페이지
         @self.app.route('/docs')
