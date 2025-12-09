@@ -2,6 +2,17 @@
 
 const API_BASE = '/api';
 
+// Ensure all fetch calls include credentials by default so sessions stick
+const __originalFetch = window.fetch.bind(window);
+window.fetch = (url, options = {}) => {
+    const merged = { credentials: 'include', ...options };
+    // Preserve any explicitly set credentials
+    if (options && options.credentials) {
+        merged.credentials = options.credentials;
+    }
+    return __originalFetch(url, merged);
+};
+
 class LuminaApp {
     constructor() {
         this.requests = [];
