@@ -79,7 +79,7 @@ class LuminaWebServer:
 
         # 서버 스레드
         self.server_thread = None
-        self.is_running = False
+        self.is_running = True  # allow background timers to run immediately
 
         # 자동 저장/정리 타이머
         self.auto_save_timer = None
@@ -331,6 +331,8 @@ class LuminaWebServer:
                 session['username'] = payload.get('username')
 
             pm = self.get_session_project_manager()
+            # Persist session immediately
+            self.save_session(session_id)
 
             return jsonify({
                 'success': True,
