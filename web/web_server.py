@@ -628,7 +628,11 @@ class LuminaWebServer:
         # API: OpenAPI 임포트
         @self.app.route('/api/import/openapi', methods=['POST'])
         def import_openapi():
-            pm = self.get_session_project_manager()
+            # Ensure session is initialized
+            if 'session_id' not in session:
+                session['session_id'] = str(uuid.uuid4())
+            session_id = session['session_id']
+
             req_data = request.json or {}
             url = req_data.get('url', '').strip()
             content = req_data.get('content', '').strip()
@@ -646,16 +650,49 @@ class LuminaWebServer:
 
                 from utils.openapi_converter import OpenAPIConverter
                 imported_folder = OpenAPIConverter.import_from_content(content)
+                project_name = imported_folder.name or "Imported API"
 
-                if not imported_folder:
-                    return jsonify({'error': 'Failed to parse OpenAPI data'}), 400
+                with self.sessions_lock:
+                    self.sessions.setdefault(session_id, {})
 
-                pm.root_folder.add_folder(imported_folder)
+                    # Find existing project by title (exact match)
+                    target_project_id = None
+                    for pid, existing_pm in self.sessions[session_id].items():
+                        if existing_pm.project_name == project_name:
+                            target_project_id = pid
+                            pm = existing_pm
+                            break
+
+                    action = 'updated'
+                    if target_project_id is None:
+                        # Create new project for this OpenAPI
+                        target_project_id = str(uuid.uuid4())
+                        pm = ProjectManager()
+                        pm.project_name = project_name
+                        self.sessions[session_id][target_project_id] = pm
+                        action = 'created'
+
+                    # Replace existing folder with the same name or append
+                    replaced = False
+                    for idx, folder in enumerate(pm.root_folder.folders):
+                        if folder.name == imported_folder.name:
+                            pm.root_folder.folders[idx] = imported_folder
+                            replaced = True
+                            break
+
+                    if not replaced:
+                        pm.root_folder.add_folder(imported_folder)
+
+                    # Make the imported project active
+                    self.active_projects[session_id] = target_project_id
 
                 return jsonify({
                     'success': True,
                     'imported_count': len(imported_folder.requests),
-                    'folder_name': imported_folder.name
+                    'folder_name': imported_folder.name,
+                    'project_name': project_name,
+                    'project_id': target_project_id,
+                    'action': action
                 })
             except Exception as e:
                 return jsonify({'error': str(e)}), 500
